@@ -1,0 +1,61 @@
+# Introduction
+
+ZKCred is a privacy-preserving credential system that allows Bitcoin holders to prove their holdings tier without revealing their wallet address or exact balance.
+
+## Problem
+
+Many Web3 applications need to gate access or provide benefits based on Bitcoin holdings:
+
+- **DAOs**: Voting power based on BTC holdings
+- **DeFi**: Collateral verification without revealing positions
+- **Communities**: Exclusive access for whales
+- **Airdrops**: Targeting specific holder tiers
+
+But verifying Bitcoin holdings traditionally requires:
+1. Revealing your wallet address
+2. Exposing your exact balance
+3. Compromising your privacy
+
+## Solution
+
+ZKCred solves this by:
+
+1. **Signing a message** with your Bitcoin wallet to prove ownership
+2. **Querying an oracle** to verify your balance tier (not exact amount)
+3. **Issuing a credential** on Starknet with only a hash of your pubkey
+4. **Enabling verification** where third parties see only your tier, not your wallet
+
+## Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                      USER FLOW                                   │
+│                                                                  │
+│  1. Connect Wallet   →  2. Sign Message  →  3. Get Credential   │
+│     (BTC Wallet)         (Prove Ownership)   (On Starknet)      │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                    VERIFICATION FLOW                             │
+│                                                                  │
+│  Third Party App  →  Query ZKCred API  →  Get Tier (not wallet) │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+## Privacy Guarantees
+
+| What's Stored | What's NOT Stored |
+|---------------|-------------------|
+| Pubkey hash (SHA-256) | Raw public key |
+| Credential type | Wallet address |
+| Tier (0-3) | Exact balance |
+| Timestamp | Transaction history |
+
+## Next Steps
+
+- [Quick Start](/docs/quickstart) - Create your first credential
+- [How It Works](/docs/how-it-works) - Deep dive into the system
+- [API Reference](/api) - Integrate into your app

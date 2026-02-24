@@ -1,0 +1,99 @@
+# Deployed Addresses
+
+Contract addresses for ZKCred on different networks.
+
+## Starknet Sepolia (Testnet)
+
+| Contract | Address | Explorer |
+|----------|---------|----------|
+| CredentialRegistry | `0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216` | [View](https://sepolia.starkscan.co/contract/0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216) |
+| CredentialVerifier | `0x07d69c729df6c1ac6d2c011a6e740fb23ea924928dcacb8f2f1a6c6c5b4f34e2` | [View](https://sepolia.starkscan.co/contract/0x07d69c729df6c1ac6d2c011a6e740fb23ea924928dcacb8f2f1a6c6c5b4f34e2) |
+
+## Starknet Mainnet
+
+:::info
+Mainnet deployment coming soon.
+:::
+
+## Interacting with Contracts
+
+### Using starknet.js
+
+```typescript
+import { Contract, RpcProvider } from 'starknet';
+
+const provider = new RpcProvider({
+  nodeUrl: 'https://starknet-sepolia.public.blastapi.io',
+});
+
+const registry = new Contract(
+  REGISTRY_ABI,
+  '0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216',
+  provider
+);
+
+// Read credential
+const credential = await registry.get_credential(credentialId);
+console.log('Tier:', credential.tier);
+```
+
+### Using starkli (CLI)
+
+```bash
+# Read credential
+starkli call \
+  0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216 \
+  get_credential \
+  0x123...  # credential_id
+
+# Verify tier
+starkli call \
+  0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216 \
+  verify_tier \
+  0x123... \  # credential_id
+  2           # min_tier (Fish)
+```
+
+## Contract ABIs
+
+Download ABIs for integration:
+
+- [CredentialRegistry ABI](/abis/credential_registry.json)
+- [CredentialVerifier ABI](/abis/credential_verifier.json)
+
+## Network Configuration
+
+### Sepolia Testnet
+
+```typescript
+const SEPOLIA_CONFIG = {
+  chainId: 'SN_SEPOLIA',
+  rpcUrl: 'https://starknet-sepolia.public.blastapi.io',
+  explorerUrl: 'https://sepolia.starkscan.co',
+  contracts: {
+    registry: '0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216',
+    verifier: '0x07d69c729df6c1ac6d2c011a6e740fb23ea924928dcacb8f2f1a6c6c5b4f34e2',
+  },
+};
+```
+
+### Mainnet (Coming Soon)
+
+```typescript
+const MAINNET_CONFIG = {
+  chainId: 'SN_MAIN',
+  rpcUrl: 'https://starknet-mainnet.public.blastapi.io',
+  explorerUrl: 'https://starkscan.co',
+  contracts: {
+    registry: 'TBD',
+    verifier: 'TBD',
+  },
+};
+```
+
+## Faucets
+
+Need testnet tokens for interacting with contracts?
+
+- **STRK (Sepolia)**: [Starknet Faucet](https://starknet-faucet.vercel.app/)
+- **ETH (Sepolia)**: Bridge from Ethereum Sepolia via [StarkGate](https://sepolia.starkgate.starknet.io/)

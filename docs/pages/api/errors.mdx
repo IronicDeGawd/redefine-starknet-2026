@@ -1,0 +1,176 @@
+# Error Handling
+
+The ZKCred API uses conventional HTTP status codes and consistent error response formats.
+
+## Error Response Format
+
+All errors follow this structure:
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": { ... }  // Optional additional context
+  }
+}
+```
+
+## Error Codes
+
+### Authentication Errors
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `UNAUTHORIZED` | 401 | Missing or invalid API key |
+| `FORBIDDEN` | 403 | API key lacks permission |
+
+### Client Errors
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `BAD_REQUEST` | 400 | Invalid request parameters |
+| `INVALID_CREDENTIAL_ID` | 400 | Credential ID format is invalid |
+| `NOT_FOUND` | 404 | Credential does not exist |
+| `CREDENTIAL_REVOKED` | 410 | Credential has been revoked |
+| `RATE_LIMITED` | 429 | Too many requests |
+
+### Server Errors
+
+| Code | Status | Description |
+|------|--------|-------------|
+| `INTERNAL_ERROR` | 500 | Unexpected server error |
+| `BLOCKCHAIN_ERROR` | 502 | Failed to query Starknet |
+| `SERVICE_UNAVAILABLE` | 503 | Service temporarily unavailable |
+
+## Handling Errors
+
+### TypeScript Example
+
+```typescript
+interface ApiError {
+  error: {
+    code: string;
+    message: string;
+    details?: unknown;
+  };
+}
+
+async function verifyCredential(id: string) {
+  const response = await fetch(`${API_URL}/credentials/${id}/verify`, {
+    method: 'POST',
+    headers: { 'X-API-Key': API_KEY },
+  });
+
+  if (!response.ok) {
+    const error: ApiError = await response.json();
+
+    switch (error.error.code) {
+      case 'NOT_FOUND':
+        throw new Error('Credential does not exist');
+      case 'CREDENTIAL_REVOKED':
+        throw new Error('Credential has been revoked');
+      case 'RATE_LIMITED':
+        throw new Error('Too many requests, try again later');
+      case 'UNAUTHORIZED':
+        throw new Error('Invalid API key');
+      default:
+        throw new Error(error.error.message);
+    }
+  }
+
+  return response.json();
+}
+```
+
+### Python Example
+
+```python
+import requests
+
+def verify_credential(credential_id: str) -> dict:
+    response = requests.post(
+        f"{API_URL}/credentials/{credential_id}/verify",
+        headers={"X-API-Key": API_KEY}
+    )
+
+    if not response.ok:
+        error = response.json()["error"]
+        code = error["code"]
+
+        if code == "NOT_FOUND":
+            raise ValueError("Credential does not exist")
+        elif code == "RATE_LIMITED":
+            raise RuntimeError("Rate limit exceeded")
+        else:
+            raise Exception(error["message"])
+
+    return response.json()
+```
+
+## Retry Strategy
+
+For transient errors (5xx, 429), implement exponential backoff:
+
+```typescript
+const RETRYABLE_CODES = [429, 500, 502, 503, 504];
+
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit,
+  maxRetries = 3
+): Promise<Response> {
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options);
+
+      if (!RETRYABLE_CODES.includes(response.status)) {
+        return response;
+      }
+
+      // For 429, check reset header
+      if (response.status === 429) {
+        const resetTime = response.headers.get('X-RateLimit-Reset');
+        if (resetTime) {
+          const waitMs = parseInt(resetTime) * 1000 - Date.now();
+          if (waitMs > 0 && waitMs < 60000) {
+            await sleep(waitMs);
+            continue;
+          }
+        }
+      }
+
+      // Exponential backoff
+      await sleep(Math.pow(2, attempt) * 1000);
+    } catch (error) {
+      lastError = error as Error;
+      await sleep(Math.pow(2, attempt) * 1000);
+    }
+  }
+
+  throw lastError || new Error('Max retries exceeded');
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+```
+
+## Common Issues
+
+### "Invalid API key"
+- Check that your API key is correct
+- Ensure you're using the right key for the environment (test vs live)
+- API key must be passed in `X-API-Key` header or `Authorization: Bearer` header
+
+### "Credential not found"
+- Verify the credential ID is correct (should start with `0x`)
+- Check that the credential was issued on the same network (testnet vs mainnet)
+- The credential may have been issued recently; wait a few seconds for blockchain confirmation
+
+### "Service unavailable"
+- The Starknet node may be temporarily unavailable
+- Retry with exponential backoff
+- Check the `/health` endpoint for service status

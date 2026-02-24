@@ -1,0 +1,78 @@
+# API Reference
+
+The ZKCred API allows you to verify credentials programmatically. Use it to:
+
+- Check if a credential is valid
+- Verify minimum tier requirements
+- Batch verify multiple credentials
+
+## Base URL
+
+```
+https://your-domain.com/api/v1
+```
+
+For local development:
+```
+http://localhost:3000/api/v1
+```
+
+## Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/health` | API health check |
+| `GET` | `/credentials/{id}` | Get credential details |
+| `POST` | `/credentials/{id}/verify` | Verify a credential |
+| `POST` | `/credentials/batch-verify` | Verify multiple credentials |
+
+## Quick Example
+
+```typescript
+// Verify a credential
+const response = await fetch('https://api.zkcred.xyz/v1/credentials/0x123.../verify', {
+  method: 'POST',
+  headers: {
+    'X-API-Key': 'zkcred_test_demo123',
+    'Content-Type': 'application/json',
+  },
+  body: JSON.stringify({
+    minTier: 2, // Require Fish tier or higher
+  }),
+});
+
+const result = await response.json();
+// { valid: true, credential: { tier: 3, tierName: "Whale" }, meetsTier: true }
+```
+
+## Response Format
+
+All responses are JSON with consistent structure:
+
+### Success Response
+```json
+{
+  "id": "0x123...",
+  "type": "btc_tier",
+  "tier": 2,
+  "tierName": "Fish",
+  "issuedAt": "2026-02-24T12:00:00Z",
+  "status": "active"
+}
+```
+
+### Error Response
+```json
+{
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Credential not found"
+  }
+}
+```
+
+## Next Steps
+
+- [Authentication](/api/authentication) - Get your API key
+- [Rate Limits](/api/rate-limits) - Understand usage limits
+- [Credentials Endpoint](/api/credentials) - Full endpoint reference

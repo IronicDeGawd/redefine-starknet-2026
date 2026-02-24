@@ -1,0 +1,102 @@
+# Authentication
+
+The ZKCred API uses API keys for authentication. All endpoints except `/health` require a valid API key.
+
+## Getting an API Key
+
+### Test Keys (Hackathon Demo)
+
+For testing, use these pre-configured keys:
+
+| Key | Tier | Rate Limit |
+|-----|------|------------|
+| `zkcred_test_demo123` | Free | 60 req/min, 1K/day |
+| `zkcred_test_hackathon` | Pro | 600 req/min, 50K/day |
+
+### Production Keys
+
+Contact us for production API keys with higher limits.
+
+## Using Your API Key
+
+### Header Authentication (Recommended)
+
+```bash
+curl -X GET \
+  'https://api.zkcred.xyz/v1/credentials/0x123...' \
+  -H 'X-API-Key: zkcred_test_demo123'
+```
+
+### Bearer Token
+
+```bash
+curl -X GET \
+  'https://api.zkcred.xyz/v1/credentials/0x123...' \
+  -H 'Authorization: Bearer zkcred_test_demo123'
+```
+
+### Query Parameter (Testing Only)
+
+```bash
+curl -X GET \
+  'https://api.zkcred.xyz/v1/credentials/0x123...?api_key=zkcred_test_demo123'
+```
+
+:::warning
+Never expose API keys in client-side code. Always call the API from your backend.
+:::
+
+## SDK Usage
+
+```typescript
+// TypeScript/JavaScript
+const response = await fetch(url, {
+  headers: {
+    'X-API-Key': process.env.ZKCRED_API_KEY,
+  },
+});
+```
+
+```python
+# Python
+import requests
+
+response = requests.get(url, headers={
+    'X-API-Key': os.environ['ZKCRED_API_KEY']
+})
+```
+
+## Error Responses
+
+### Missing API Key
+
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing or invalid API key"
+  }
+}
+```
+**Status:** `401 Unauthorized`
+
+### Invalid API Key
+
+```json
+{
+  "error": {
+    "code": "UNAUTHORIZED",
+    "message": "Missing or invalid API key"
+  }
+}
+```
+**Status:** `401 Unauthorized`
+
+## Key Prefixes
+
+| Prefix | Environment |
+|--------|-------------|
+| `zkcred_test_` | Testnet (Sepolia) |
+| `zkcred_live_` | Mainnet |
+
+Use the appropriate key prefix for your environment.

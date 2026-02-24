@@ -1,0 +1,156 @@
+# Smart Contracts
+
+ZKCred credentials are stored on Starknet for trustless verification.
+
+## Overview
+
+The system consists of two contracts:
+
+| Contract | Purpose |
+|----------|---------|
+| **CredentialRegistry** | Main storage and issuance |
+| **CredentialVerifier** | Helper verification functions |
+
+## CredentialRegistry
+
+The core contract that stores and manages credentials.
+
+### Storage
+
+```cairo
+struct Credential {
+    pubkey_hash: felt252,      // SHA-256 hash of BTC pubkey
+    credential_type: felt252,  // 'btc_tier' or 'wallet_age'
+    tier: u8,                  // 0-3
+    issued_at: u64,            // Unix timestamp
+    revoked: bool,             // Revocation status
+}
+
+storage:
+    credentials: Map<felt252, Credential>  // credential_id -> Credential
+    issued_pubkeys: Map<felt252, bool>     // type_key -> issued
+    total_issued: u256                     // Counter
+    owner: ContractAddress                 // Admin
+    paused: bool                           // Emergency stop
+```
+
+### Functions
+
+#### `issue_credential`
+
+Issue a new credential for a pubkey hash.
+
+```cairo
+fn issue_credential(
+    ref self: ContractState,
+    pubkey_hash: felt252,
+    credential_type: felt252,
+    tier: u8,
+    salt: felt252,
+) -> felt252  // Returns credential_id
+```
+
+**Access**: Anyone (server account pays gas)
+
+**Validation**:
+- Contract not paused
+- Tier must be 0-3
+- Type must be 'btc_tier' or 'wallet_age'
+- Not already issued for this pubkey + type
+
+#### `revoke_credential`
+
+Revoke an existing credential.
+
+```cairo
+fn revoke_credential(ref self: ContractState, credential_id: felt252)
+```
+
+**Access**: Owner only
+
+#### `get_credential`
+
+Read credential data.
+
+```cairo
+fn get_credential(self: @ContractState, credential_id: felt252) -> Credential
+```
+
+**Access**: Anyone (read-only)
+
+#### `verify_tier`
+
+Check if credential meets minimum tier.
+
+```cairo
+fn verify_tier(self: @ContractState, credential_id: felt252, min_tier: u8) -> bool
+```
+
+**Access**: Anyone (read-only)
+
+### Events
+
+```cairo
+event CredentialIssued {
+    credential_id: felt252,
+    credential_type: felt252,
+    tier: u8,
+    timestamp: u64,
+}
+
+event CredentialRevoked {
+    credential_id: felt252,
+    timestamp: u64,
+}
+```
+
+## Credential ID Generation
+
+Credential IDs are deterministically generated using Poseidon hash:
+
+```cairo
+let credential_id = poseidon_hash_span(
+    array![pubkey_hash, credential_type, tier.into(), salt].span()
+);
+```
+
+This ensures:
+- **Uniqueness**: Salt provides randomness
+- **Determinism**: Same inputs = same ID
+- **Privacy**: ID doesn't reveal pubkey
+
+## Verification On-Chain
+
+Other contracts can verify credentials directly:
+
+```cairo
+use zkcred::interfaces::ICredentialRegistry;
+
+fn gate_whale_only(credential_id: felt252) {
+    let registry = ICredentialRegistry::new(REGISTRY_ADDRESS);
+
+    // Check tier >= 3 (Whale)
+    let is_whale = registry.verify_tier(credential_id, 3);
+    assert(is_whale, 'Whale tier required');
+
+    // Proceed with gated action...
+}
+```
+
+## Source Code
+
+The contracts are open source and available on GitHub:
+
+- [credential_registry.cairo](https://github.com/your-repo/zkcred/blob/main/contracts/src/credential_registry.cairo)
+- [credential_verifier.cairo](https://github.com/your-repo/zkcred/blob/main/contracts/src/credential_verifier.cairo)
+
+## Audit Status
+
+:::warning
+These contracts have NOT been audited. Use at your own risk on mainnet.
+:::
+
+## Next Steps
+
+- [Deployed Addresses](/contracts/addresses) - Contract addresses by network
+- [API Reference](/api) - Off-chain verification via API

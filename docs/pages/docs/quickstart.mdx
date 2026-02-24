@@ -1,0 +1,100 @@
+# Quick Start
+
+Get your first ZKCred credential in 5 minutes.
+
+## Prerequisites
+
+- A Bitcoin wallet (Xverse, Leather, OKX, or any WBIP-compatible wallet)
+- Some BTC in your wallet (any amount works)
+
+## Step 1: Visit ZKCred
+
+Go to [zkcred.xyz](https://zkcred.xyz) (or your local development server).
+
+## Step 2: Connect Your Wallet
+
+Click "Connect Wallet" and select your Bitcoin wallet. You'll be prompted to:
+
+1. Select an account
+2. Approve the connection request
+
+:::info
+ZKCred only requests read access to your wallet. No funds can be moved.
+:::
+
+## Step 3: Create Your Credential
+
+Once connected, the AI assistant will guide you through creating a credential:
+
+1. **Choose credential type**: BTC Tier or Wallet Age
+2. **Select your tier**: The tier you want to claim
+3. **Sign the message**: Prove you own the wallet
+
+## Step 4: Sign the Verification Message
+
+Your wallet will prompt you to sign a message like:
+
+```
+ZKCred Credential Request
+Type: btc_tier
+Tier: 2
+Timestamp: 1708776000
+```
+
+This signature proves you own the wallet without moving any funds.
+
+## Step 5: Receive Your Credential
+
+After signing, ZKCred will:
+
+1. Verify your signature
+2. Query the oracle to verify your balance
+3. Issue the credential on Starknet
+4. Return your credential ID
+
+```
+✅ Credential Issued!
+
+ID: 0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216
+Tier: Fish 🐟
+```
+
+## Step 6: Share Your Credential
+
+Share your credential ID with any service that supports ZKCred verification. They can verify your tier without seeing your wallet address.
+
+## Verification Example
+
+Anyone can verify your credential:
+
+```bash
+curl -X POST \
+  'https://api.zkcred.xyz/v1/credentials/0x073566.../verify' \
+  -H 'X-API-Key: zkcred_test_demo123'
+```
+
+Response:
+```json
+{
+  "valid": true,
+  "credential": {
+    "tier": 2,
+    "tierName": "Fish"
+  }
+}
+```
+
+## What's Stored On-Chain
+
+| Stored | NOT Stored |
+|--------|------------|
+| Hash of your pubkey | Your actual pubkey |
+| Tier (0-3) | Your wallet address |
+| Credential type | Your exact balance |
+| Timestamp | Any transaction data |
+
+## Next Steps
+
+- [How It Works](/docs/how-it-works) - Understand the system
+- [API Reference](/api) - Integrate into your app
+- [Smart Contracts](/contracts) - Verify on-chain

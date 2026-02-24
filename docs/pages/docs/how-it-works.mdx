@@ -1,0 +1,189 @@
+# How It Works
+
+A deep dive into ZKCred's architecture and security model.
+
+## System Overview
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                         ZKCred SYSTEM                             │
+│                                                                   │
+│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐          │
+│  │   Bitcoin   │    │   Oracle    │    │  Starknet   │          │
+│  │   Wallet    │───►│  (Mempool)  │───►│  Contract   │          │
+│  └─────────────┘    └─────────────┘    └─────────────┘          │
+│        │                   │                  │                  │
+│        │ Sign              │ Verify           │ Store            │
+│        ▼                   ▼                  ▼                  │
+│  ┌─────────────────────────────────────────────────┐            │
+│  │                  ZKCred API                      │            │
+│  │  - Signature verification                        │            │
+│  │  - Oracle queries                                │            │
+│  │  - Credential issuance                           │            │
+│  └─────────────────────────────────────────────────┘            │
+│                           │                                      │
+│                           ▼                                      │
+│  ┌─────────────────────────────────────────────────┐            │
+│  │              Third-Party Apps                    │            │
+│  │  - Verify credentials via API                    │            │
+│  │  - Gate access by tier                           │            │
+│  └─────────────────────────────────────────────────┘            │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+## Credential Issuance Flow
+
+### 1. Wallet Connection
+
+User connects their Bitcoin wallet using WBIP (Wallet Bitcoin Improvement Proposal) standard:
+
+```typescript
+const response = await Wallet.request('getAccounts', {
+  purposes: ['payment'],
+  message: 'Connect to ZKCred',
+});
+// Returns: { address, publicKey }
+```
+
+### 2. Message Signing
+
+User signs a structured message to prove wallet ownership:
+
+```typescript
+const message = `ZKCred Credential Request
+Type: btc_tier
+Timestamp: ${Date.now()}`;
+
+const signature = await Wallet.request('signMessage', {
+  address: userAddress,
+  message,
+  protocol: 'BIP322', // Bitcoin Message Signing
+});
+```
+
+### 3. Server-Side Verification
+
+The server verifies the signature cryptographically:
+
+```typescript
+import * as secp256k1 from '@noble/secp256k1';
+
+function verifySignature(message: string, signature: string, pubkey: string): boolean {
+  const messageHash = sha256(message);
+  return secp256k1.verify(signature, messageHash, pubkey);
+}
+```
+
+### 4. Oracle Query
+
+Server queries Mempool.space for balance verification:
+
+```typescript
+const response = await fetch(`https://mempool.space/api/address/${address}`);
+const { chain_stats, mempool_stats } = await response.json();
+
+const balance = chain_stats.funded_txo_sum - chain_stats.spent_txo_sum;
+const btcBalance = balance / 100_000_000;
+
+const tier = getTierFromBalance(btcBalance);
+// 0 = Shrimp (<1), 1 = Crab (1-10), 2 = Fish (10-100), 3 = Whale (100+)
+```
+
+### 5. Credential Issuance
+
+Server issues credential on Starknet:
+
+```typescript
+// Hash the pubkey (never store raw)
+const pubkeyHash = sha256(pubkey);
+
+// Issue on contract
+const tx = await registry.issue_credential(
+  pubkeyHash,
+  'btc_tier',  // credential type
+  tier,        // 0-3
+  randomSalt   // for unique ID
+);
+
+// Returns credential ID
+```
+
+## Privacy Model
+
+### What's Private
+
+| Data | Status | Reason |
+|------|--------|--------|
+| Wallet address | Never stored | Only used for oracle query |
+| Public key | Hashed (SHA-256) | On-chain storage |
+| Exact balance | Never stored | Only tier (0-3) is recorded |
+| Transaction history | Never accessed | Not needed for tier verification |
+
+### What's Public
+
+| Data | Status | Reason |
+|------|--------|--------|
+| Pubkey hash | On-chain | Links credential to owner |
+| Tier (0-3) | On-chain | The whole point of the credential |
+| Credential type | On-chain | For verification filtering |
+| Timestamp | On-chain | For audit and expiry |
+
+## Security Model
+
+### Signature Verification
+
+BIP-322 signatures provide:
+- **Proof of ownership**: Only the private key holder can sign
+- **Non-repudiation**: Signature is cryptographically binding
+- **No fund movement**: Signing doesn't authorize transactions
+
+### Oracle Trust Model
+
+The oracle (Mempool.space) is trusted to:
+- Report accurate balance at query time
+- Not fabricate false balances
+
+The oracle CANNOT:
+- Issue credentials directly (requires server signature)
+- Modify existing credentials (on-chain immutability)
+- Link credentials to identities (only sees address)
+
+### Smart Contract Security
+
+- **Immutable**: Credential data cannot be modified after issuance
+- **Owner-only revocation**: Only contract owner can revoke
+- **Replay protection**: Salt ensures unique credential IDs
+- **Pausable**: Emergency stop mechanism
+
+## Verification Flow
+
+```
+Third-Party App                      ZKCred API                    Starknet
+      │                                   │                            │
+      │──GET /credentials/{id}/verify────►│                            │
+      │                                   │──read_credential()────────►│
+      │                                   │◄────────────────────────────│
+      │                                   │                            │
+      │◄──{ valid: true, tier: 2 }────────│                            │
+      │                                   │                            │
+```
+
+The verifier:
+1. Never sees the user's wallet address
+2. Only sees the tier (0-3)
+3. Can verify the credential is active (not revoked)
+
+## Limitations
+
+### Current Limitations
+
+1. **Trust in oracle**: Balance verification relies on Mempool.space
+2. **Self-declaration option**: Non-verified credentials still work (for demo)
+3. **Single snapshot**: Balance verified at issuance time only
+
+### Future Improvements
+
+1. **True ZK proofs**: Cairo circuits for trustless balance proofs
+2. **Multiple oracles**: Consensus across oracle providers
+3. **Periodic re-verification**: Optional refresh of tier status
+4. **Cross-chain**: Support for other UTXO chains

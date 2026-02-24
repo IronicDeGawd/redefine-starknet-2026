@@ -1,0 +1,128 @@
+# Rate Limits
+
+The ZKCred API enforces rate limits to ensure fair usage and system stability.
+
+## Limits by Tier
+
+| Tier | Requests/Minute | Requests/Day | Price |
+|------|-----------------|--------------|-------|
+| Free | 60 | 1,000 | $0 |
+| Pro | 600 | 50,000 | $49/mo |
+| Enterprise | Custom | Custom | Contact us |
+
+## Rate Limit Headers
+
+Every response includes headers showing your current rate limit status:
+
+```
+X-RateLimit-Limit: 60
+X-RateLimit-Remaining: 45
+X-RateLimit-Reset: 1708776000
+```
+
+| Header | Description |
+|--------|-------------|
+| `X-RateLimit-Limit` | Max requests per minute |
+| `X-RateLimit-Remaining` | Requests left in window |
+| `X-RateLimit-Reset` | Unix timestamp when limit resets |
+
+## Rate Limit Exceeded
+
+When you exceed the rate limit, you'll receive:
+
+```json
+{
+  "error": {
+    "code": "RATE_LIMITED",
+    "message": "Rate limit exceeded. Please try again later."
+  }
+}
+```
+
+**Status:** `429 Too Many Requests`
+
+## Best Practices
+
+### 1. Implement Exponential Backoff
+
+```typescript
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    const response = await fetch(url, options);
+
+    if (response.status !== 429) {
+      return response;
+    }
+
+    const resetTime = parseInt(response.headers.get('X-RateLimit-Reset') || '0');
+    const waitTime = Math.max(resetTime * 1000 - Date.now(), 1000 * (2 ** i));
+
+    await new Promise(resolve => setTimeout(resolve, waitTime));
+  }
+
+  throw new Error('Rate limit exceeded after retries');
+}
+```
+
+### 2. Cache Responses
+
+Credentials rarely change. Cache verification results for short periods:
+
+```typescript
+const cache = new Map<string, { result: any; expiry: number }>();
+
+async function verifyCredential(id: string) {
+  const cached = cache.get(id);
+  if (cached && cached.expiry > Date.now()) {
+    return cached.result;
+  }
+
+  const result = await fetchCredential(id);
+  cache.set(id, {
+    result,
+    expiry: Date.now() + 60_000, // 1 minute cache
+  });
+
+  return result;
+}
+```
+
+### 3. Use Batch Endpoints
+
+Instead of:
+```typescript
+// ❌ 100 separate requests
+for (const id of credentialIds) {
+  await verifyCredential(id);
+}
+```
+
+Use:
+```typescript
+// ✅ 1 batch request
+await batchVerify(credentialIds);
+```
+
+### 4. Monitor Your Usage
+
+Track the `X-RateLimit-Remaining` header to avoid hitting limits:
+
+```typescript
+async function monitoredFetch(url: string, options: RequestInit) {
+  const response = await fetch(url, options);
+
+  const remaining = parseInt(response.headers.get('X-RateLimit-Remaining') || '0');
+  if (remaining < 10) {
+    console.warn(`Low rate limit remaining: ${remaining}`);
+  }
+
+  return response;
+}
+```
+
+## Upgrading Your Limit
+
+Need higher limits? Contact us:
+
+- **Pro tier**: Self-service upgrade (coming soon)
+- **Enterprise**: [Contact sales](mailto:sales@zkcred.xyz)

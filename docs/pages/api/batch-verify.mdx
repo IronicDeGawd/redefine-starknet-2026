@@ -1,0 +1,149 @@
+# Batch Verify
+
+Verify multiple credentials in a single request. Useful for bulk operations like:
+
+- Snapshot verification for airdrops
+- Batch access control checks
+- Analytics and reporting
+
+## Endpoint
+
+```
+POST /api/v1/credentials/batch-verify
+```
+
+## Request Body
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `credentialIds` | string[] | Yes | Array of credential IDs (max 100) |
+| `minTier` | number | No | Minimum tier required (0-3) |
+
+### Example Request
+
+```json
+{
+  "credentialIds": [
+    "0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216",
+    "0x07d69c729df6c1ac6d2c011a6e740fb23ea924928dcacb8f2f1a6c6c5b4f34e2",
+    "0x0abc123..."
+  ],
+  "minTier": 2
+}
+```
+
+## Response
+
+```json
+{
+  "results": [
+    {
+      "id": "0x073566...",
+      "valid": true,
+      "tier": 3,
+      "tierName": "Whale"
+    },
+    {
+      "id": "0x07d69c...",
+      "valid": true,
+      "tier": 2,
+      "tierName": "Fish"
+    },
+    {
+      "id": "0x0abc123...",
+      "valid": false,
+      "reason": "not_found"
+    }
+  ],
+  "validCount": 2,
+  "invalidCount": 1,
+  "totalChecked": 3
+}
+```
+
+## Result Reasons
+
+| Reason | Description |
+|--------|-------------|
+| `not_found` | Credential does not exist |
+| `revoked` | Credential has been revoked |
+| `below_tier` | Tier is below `minTier` |
+| `invalid_id` | Credential ID format is invalid |
+
+## Limits
+
+| Limit | Value |
+|-------|-------|
+| Max credentials per request | 100 |
+| Timeout | 60 seconds |
+
+## Example
+
+```bash
+curl -X POST \
+  'https://api.zkcred.xyz/v1/credentials/batch-verify' \
+  -H 'X-API-Key: zkcred_test_demo123' \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "credentialIds": ["0x073566...", "0x07d69c..."],
+    "minTier": 1
+  }'
+```
+
+## Use Cases
+
+### Airdrop Eligibility
+
+```typescript
+async function filterEligibleWallets(
+  credentialIds: string[]
+): Promise<string[]> {
+  const response = await fetch(`${API_URL}/credentials/batch-verify`, {
+    method: 'POST',
+    headers: {
+      'X-API-Key': API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      credentialIds,
+      minTier: 2, // Fish tier or higher
+    }),
+  });
+
+  const { results } = await response.json();
+  return results
+    .filter((r: any) => r.valid)
+    .map((r: any) => r.id);
+}
+```
+
+### Bulk Access Verification
+
+```typescript
+async function verifyGroupAccess(
+  credentials: string[]
+): Promise<{ allowed: string[]; denied: string[] }> {
+  const response = await fetch(`${API_URL}/credentials/batch-verify`, {
+    method: 'POST',
+    headers: {
+      'X-API-Key': API_KEY,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ credentialIds: credentials }),
+  });
+
+  const { results } = await response.json();
+
+  return {
+    allowed: results.filter((r: any) => r.valid).map((r: any) => r.id),
+    denied: results.filter((r: any) => !r.valid).map((r: any) => r.id),
+  };
+}
+```
+
+## Performance Tips
+
+1. **Batch wisely**: Group related verifications together
+2. **Cache results**: Credentials rarely change, cache for short periods
+3. **Handle partial failures**: Some credentials may fail while others succeed
+4. **Use minTier**: Filter at the API level instead of client-side

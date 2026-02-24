@@ -1,0 +1,13 @@
+{
+  "name": "zkcred-docs",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vocs dev",
+    "build": "vocs build",
+    "preview": "vocs preview"
+  },
+  "dependencies": {
+    "vocs": "^1.0.0-alpha.62"
+  }
+}
