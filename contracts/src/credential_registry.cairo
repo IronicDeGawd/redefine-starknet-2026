@@ -1,29 +1,25 @@
 /// CredentialRegistry - Main contract for ZKCred credential management
-///
-/// This contract handles issuing, storing, and revoking privacy-preserving
-/// credentials for Bitcoin holders on Starknet.
 
 #[starknet::contract]
 pub mod CredentialRegistry {
     use starknet::{ContractAddress, get_caller_address, get_block_timestamp};
+    use starknet::storage::{
+        StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapReadAccess,
+        StorageMapWriteAccess, Map,
+    };
     use core::poseidon::poseidon_hash_span;
-    use crate::interfaces::{ICredentialRegistry, Credential};
+    use core::num::traits::Zero;
+    use crate::interfaces::{ICredentialRegistry, ICredentialRegistryAdmin, Credential};
 
     // ============ Storage ============
 
     #[storage]
     struct Storage {
-        /// Mapping: credential_id => Credential
-        credentials: LegacyMap<felt252, Credential>,
-        /// Mapping: (pubkey_hash, credential_type) hash => has_credential
-        issued_pubkeys: LegacyMap<felt252, bool>,
-        /// Mapping: (pubkey_hash, credential_type) hash => credential_id
-        pubkey_to_credential: LegacyMap<felt252, felt252>,
-        /// Total credentials issued
+        credentials: Map<felt252, Credential>,
+        issued_pubkeys: Map<felt252, bool>,
+        pubkey_to_credential: Map<felt252, felt252>,
         total_issued: u256,
-        /// Contract owner
         owner: ContractAddress,
-        /// Pause state
         paused: bool,
     }
 
@@ -88,7 +84,7 @@ pub mod CredentialRegistry {
 
     #[constructor]
     fn constructor(ref self: ContractState, owner: ContractAddress) {
-        assert(!owner.is_zero(), Errors::ZERO_ADDRESS);
+        assert(owner.is_non_zero(), Errors::ZERO_ADDRESS);
         self.owner.write(owner);
         self.paused.write(false);
         self.total_issued.write(0);
@@ -105,33 +101,21 @@ pub mod CredentialRegistry {
             tier: u8,
             salt: felt252,
         ) -> felt252 {
-            // Check not paused
             assert(!self.paused.read(), Errors::PAUSED);
-
-            // Validate tier (0-3)
             assert(tier <= 3, Errors::INVALID_TIER);
-
-            // Validate credential type
             assert(
                 credential_type == 'btc_tier' || credential_type == 'wallet_age',
                 Errors::INVALID_TYPE,
             );
 
-            // Compute type key: hash(pubkey_hash, credential_type)
             let type_key = poseidon_hash_span(array![pubkey_hash, credential_type].span());
-
-            // Check not already issued for this pubkey + type
             assert(!self.issued_pubkeys.read(type_key), Errors::ALREADY_ISSUED);
 
-            // Generate credential ID: hash(pubkey_hash, type, tier, salt)
             let credential_id = poseidon_hash_span(
                 array![pubkey_hash, credential_type, tier.into(), salt].span(),
             );
 
-            // Get current timestamp
             let timestamp = get_block_timestamp();
-
-            // Create credential
             let credential = Credential {
                 pubkey_hash,
                 credential_type,
@@ -140,39 +124,30 @@ pub mod CredentialRegistry {
                 revoked: false,
             };
 
-            // Store credential
             self.credentials.write(credential_id, credential);
             self.issued_pubkeys.write(type_key, true);
             self.pubkey_to_credential.write(type_key, credential_id);
 
-            // Increment counter
             let current_total = self.total_issued.read();
             self.total_issued.write(current_total + 1);
 
-            // Emit event
             self.emit(CredentialIssued { credential_id, credential_type, tier, timestamp });
 
             credential_id
         }
 
         fn revoke_credential(ref self: ContractState, credential_id: felt252) {
-            // Check not paused
+            // Only owner can revoke credentials
+            self._only_owner();
             assert(!self.paused.read(), Errors::PAUSED);
 
-            // Get credential
             let mut credential = self.credentials.read(credential_id);
-
-            // Check exists (pubkey_hash != 0)
             assert(credential.pubkey_hash != 0, Errors::NOT_FOUND);
-
-            // Check not already revoked
             assert(!credential.revoked, Errors::ALREADY_REVOKED);
 
-            // Mark as revoked
             credential.revoked = true;
             self.credentials.write(credential_id, credential);
 
-            // Emit event
             self.emit(CredentialRevoked { credential_id, timestamp: get_block_timestamp() });
         }
 
@@ -189,8 +164,6 @@ pub mod CredentialRegistry {
 
         fn verify_tier(self: @ContractState, credential_id: felt252, min_tier: u8) -> bool {
             let credential = self.credentials.read(credential_id);
-
-            // Check: exists AND not revoked AND meets tier
             credential.pubkey_hash != 0 && !credential.revoked && credential.tier >= min_tier
         }
 
@@ -209,8 +182,8 @@ pub mod CredentialRegistry {
 
     // ============ Admin Functions ============
 
-    #[generate_trait]
-    pub impl AdminImpl of AdminTrait {
+    #[abi(embed_v0)]
+    impl AdminImpl of ICredentialRegistryAdmin<ContractState> {
         fn pause(ref self: ContractState) {
             self._only_owner();
             assert(!self.paused.read(), 'Already paused');
@@ -227,7 +200,7 @@ pub mod CredentialRegistry {
 
         fn transfer_ownership(ref self: ContractState, new_owner: ContractAddress) {
             self._only_owner();
-            assert(!new_owner.is_zero(), Errors::ZERO_ADDRESS);
+            assert(new_owner.is_non_zero(), Errors::ZERO_ADDRESS);
             let previous_owner = self.owner.read();
             self.owner.write(new_owner);
             self.emit(OwnershipTransferred { previous_owner, new_owner });

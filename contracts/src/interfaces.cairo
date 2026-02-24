@@ -81,6 +81,19 @@ pub trait ICredentialRegistry<TContractState> {
     fn is_paused(self: @TContractState) -> bool;
 }
 
+/// Admin interface for the CredentialRegistry contract
+#[starknet::interface]
+pub trait ICredentialRegistryAdmin<TContractState> {
+    /// Pause the contract (owner only)
+    fn pause(ref self: TContractState);
+
+    /// Unpause the contract (owner only)
+    fn unpause(ref self: TContractState);
+
+    /// Transfer ownership to a new address (owner only)
+    fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
+}
+
 /// Interface for the CredentialVerifier helper contract
 #[starknet::interface]
 pub trait ICredentialVerifier<TContractState> {
