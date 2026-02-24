@@ -1,4 +1,7 @@
-use snforge_std::{declare, ContractClassTrait, DeclareResultTrait};
+use snforge_std::{
+    declare, ContractClassTrait, DeclareResultTrait, start_cheat_caller_address,
+    stop_cheat_caller_address,
+};
 use starknet::ContractAddress;
 use zkcred::interfaces::{
     ICredentialRegistryDispatcher, ICredentialRegistryDispatcherTrait, ICredentialVerifierDispatcher,
@@ -10,7 +13,7 @@ fn OWNER() -> ContractAddress {
 }
 
 fn deploy_registry_and_verifier() -> (
-    ICredentialRegistryDispatcher, ICredentialVerifierDispatcher,
+    ContractAddress, ICredentialRegistryDispatcher, ICredentialVerifierDispatcher,
 ) {
     // Deploy registry
     let registry_class = declare("CredentialRegistry").unwrap().contract_class();
@@ -22,12 +25,12 @@ fn deploy_registry_and_verifier() -> (
     let (verifier_address, _) = verifier_class.deploy(@array![registry_address.into()]).unwrap();
     let verifier = ICredentialVerifierDispatcher { contract_address: verifier_address };
 
-    (registry, verifier)
+    (registry_address, registry, verifier)
 }
 
 #[test]
 fn test_is_whale() {
-    let (registry, verifier) = deploy_registry_and_verifier();
+    let (_, registry, verifier) = deploy_registry_and_verifier();
 
     // Issue a Whale credential (tier 3)
     let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
@@ -41,7 +44,7 @@ fn test_is_whale() {
 
 #[test]
 fn test_is_fish_or_above() {
-    let (registry, verifier) = deploy_registry_and_verifier();
+    let (_, registry, verifier) = deploy_registry_and_verifier();
 
     let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
     let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb);
@@ -54,7 +57,7 @@ fn test_is_fish_or_above() {
 
 #[test]
 fn test_is_crab_or_above() {
-    let (registry, verifier) = deploy_registry_and_verifier();
+    let (_, registry, verifier) = deploy_registry_and_verifier();
 
     let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
     let crab_id = registry.issue_credential(0x222, 'btc_tier', 1, 0xbbb);
@@ -67,7 +70,7 @@ fn test_is_crab_or_above() {
 
 #[test]
 fn test_is_holder() {
-    let (registry, verifier) = deploy_registry_and_verifier();
+    let (_, registry, verifier) = deploy_registry_and_verifier();
 
     let shrimp_id = registry.issue_credential(0x111, 'btc_tier', 0, 0xaaa);
 
@@ -77,7 +80,7 @@ fn test_is_holder() {
 
 #[test]
 fn test_get_tier() {
-    let (registry, verifier) = deploy_registry_and_verifier();
+    let (_, registry, verifier) = deploy_registry_and_verifier();
 
     let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
     let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb);
@@ -92,7 +95,7 @@ fn test_get_tier() {
 
 #[test]
 fn test_get_tier_nonexistent() {
-    let (_, verifier) = deploy_registry_and_verifier();
+    let (_, _, verifier) = deploy_registry_and_verifier();
 
     // Nonexistent credential should return tier 0
     assert(verifier.get_tier(0x999) == 0, 'Nonexistent should be 0');
@@ -100,13 +103,15 @@ fn test_get_tier_nonexistent() {
 
 #[test]
 fn test_get_tier_revoked() {
-    let (registry, verifier) = deploy_registry_and_verifier();
+    let (registry_address, registry, verifier) = deploy_registry_and_verifier();
 
     let credential_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
     assert(verifier.get_tier(credential_id) == 3, 'Should be 3');
 
-    // Revoke credential
+    // Revoke credential (must be called by owner)
+    start_cheat_caller_address(registry_address, OWNER());
     registry.revoke_credential(credential_id);
+    stop_cheat_caller_address(registry_address);
 
     // Revoked credential should return tier 0
     assert(verifier.get_tier(credential_id) == 0, 'Revoked should be 0');
@@ -114,7 +119,7 @@ fn test_get_tier_revoked() {
 
 #[test]
 fn test_batch_verify() {
-    let (registry, verifier) = deploy_registry_and_verifier();
+    let (_, registry, verifier) = deploy_registry_and_verifier();
 
     let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
     let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb);
@@ -133,7 +138,7 @@ fn test_batch_verify() {
 
 #[test]
 fn test_batch_verify_empty() {
-    let (_, verifier) = deploy_registry_and_verifier();
+    let (_, _, verifier) = deploy_registry_and_verifier();
 
     let ids: Array<felt252> = array![];
     let results = verifier.batch_verify(ids, 0);
@@ -143,7 +148,7 @@ fn test_batch_verify_empty() {
 
 #[test]
 fn test_revoked_fails_verification() {
-    let (registry, verifier) = deploy_registry_and_verifier();
+    let (registry_address, registry, verifier) = deploy_registry_and_verifier();
 
     let credential_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
 
@@ -151,8 +156,10 @@ fn test_revoked_fails_verification() {
     assert(verifier.is_whale(credential_id), 'Should be whale');
     assert(verifier.is_holder(credential_id), 'Should be holder');
 
-    // Revoke
+    // Revoke (must be called by owner)
+    start_cheat_caller_address(registry_address, OWNER());
     registry.revoke_credential(credential_id);
+    stop_cheat_caller_address(registry_address);
 
     // Should fail verification
     assert(!verifier.is_whale(credential_id), 'Revoked not whale');

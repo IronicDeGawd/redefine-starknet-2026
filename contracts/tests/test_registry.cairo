@@ -112,15 +112,17 @@ fn test_different_credential_types() {
 
 #[test]
 fn test_revoke_credential() {
-    let (_, registry) = deploy_registry();
+    let (contract_address, registry) = deploy_registry();
 
     let credential_id = registry.issue_credential(0x123, 'btc_tier', 3, 0xabc);
 
     // Verify active
     assert(registry.verify_tier(credential_id, 3), 'Should be valid');
 
-    // Revoke
+    // Revoke (must be called by owner)
+    start_cheat_caller_address(contract_address, OWNER());
     registry.revoke_credential(credential_id);
+    stop_cheat_caller_address(contract_address);
 
     // Verify revoked (verify_tier should fail)
     assert(!registry.verify_tier(credential_id, 0), 'Should be revoked');
@@ -133,18 +135,23 @@ fn test_revoke_credential() {
 #[test]
 #[should_panic(expected: 'Credential not found')]
 fn test_revoke_nonexistent_fails() {
-    let (_, registry) = deploy_registry();
+    let (contract_address, registry) = deploy_registry();
 
-    // Try to revoke a credential that doesn't exist
+    // Try to revoke a credential that doesn't exist (must be owner)
+    start_cheat_caller_address(contract_address, OWNER());
     registry.revoke_credential(0x999);
+    stop_cheat_caller_address(contract_address);
 }
 
 #[test]
 #[should_panic(expected: 'Already revoked')]
 fn test_double_revoke_fails() {
-    let (_, registry) = deploy_registry();
+    let (contract_address, registry) = deploy_registry();
 
     let credential_id = registry.issue_credential(0x123, 'btc_tier', 3, 0xabc);
+
+    // Must be owner to revoke
+    start_cheat_caller_address(contract_address, OWNER());
 
     // First revoke succeeds
     registry.revoke_credential(credential_id);
