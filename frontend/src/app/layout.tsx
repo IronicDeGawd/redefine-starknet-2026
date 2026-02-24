@@ -1,24 +1,18 @@
 import type { Metadata } from "next";
-import { Sora, Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileNav } from "@/components/layout/MobileNav";
 import { Header } from "@/components/layout/Header";
 
-const sora = Sora({
-  variable: "--font-sora",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
 });
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   display: "swap",
 });
@@ -54,17 +48,17 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sora.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable}`}
+      className={`${inter.variable} ${spaceGrotesk.variable}`}
     >
-      <body className="antialiased">
+      <body className="antialiased bg-[var(--background-secondary)]">
         <div className="flex min-h-screen">
           {/* Desktop Sidebar */}
           <Sidebar />
 
           {/* Main Content */}
-          <div className="flex-1 md:ml-[72px] flex flex-col min-h-screen">
+          <div className="flex-1 md:ml-[247px] flex flex-col min-h-screen">
             <Header />
-            <main className="flex-1 flex flex-col pb-16 md:pb-0">{children}</main>
+            <main className="flex-1 flex flex-col p-6 pb-20 md:pb-6">{children}</main>
           </div>
 
           {/* Mobile Navigation */}

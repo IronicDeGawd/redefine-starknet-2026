@@ -1,68 +1,99 @@
 "use client";
 
 import { forwardRef, type HTMLAttributes } from "react";
+import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/cn";
 
-export interface CardProps extends HTMLAttributes<HTMLDivElement> {
-  variant?: "default" | "elevated" | "outlined" | "gradient";
-  interactive?: boolean;
-  glow?: boolean;
-}
-
-export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, variant = "default", interactive = false, glow = false, children, ...props }, ref) => {
-    const variants = {
-      default: "bg-[var(--bg-tertiary)]",
-      elevated: "bg-[var(--bg-elevated)] shadow-lg",
-      outlined: "bg-transparent border border-[var(--border-default)]",
-      gradient: "bg-gradient-to-br from-[var(--bg-tertiary)] to-[var(--bg-secondary)]",
-    };
-
-    return (
-      <div
-        ref={ref}
-        className={cn(
-          `
-          rounded-xl
-          border border-[var(--border-subtle)]
-          transition-all duration-200
-        `,
-          variants[variant],
-          interactive && "cursor-pointer hover:border-[var(--border-hover)] hover:shadow-xl hover:-translate-y-0.5",
-          glow && "shadow-[0_0_30px_var(--accent-glow)]",
-          className
-        )}
-        {...props}
-      >
-        {children}
-      </div>
-    );
+const cardVariants = cva(
+  "rounded-2xl border transition-all duration-200",
+  {
+    variants: {
+      variant: {
+        default: "bg-white border-[var(--border-light)] shadow-[var(--shadow-card)]",
+        elevated: "bg-white border-transparent shadow-[var(--shadow-lg)]",
+        outlined: "bg-transparent border-[var(--border)]",
+        muted: "bg-[var(--grey-100)] border-transparent",
+        gradient: "bg-gradient-to-br from-[var(--primary-light)] to-white border-[var(--border-light)]",
+      },
+      interactive: {
+        true: "cursor-pointer hover:shadow-[var(--shadow-lg)] hover:-translate-y-0.5",
+        false: "",
+      },
+    },
+    defaultVariants: {
+      variant: "default",
+      interactive: false,
+    },
   }
 );
 
+export interface CardProps
+  extends HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof cardVariants> {}
+
+const Card = forwardRef<HTMLDivElement, CardProps>(
+  ({ className, variant, interactive, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn(cardVariants({ variant, interactive, className }))}
+      {...props}
+    />
+  )
+);
 Card.displayName = "Card";
 
-export const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("p-5 pb-0", className)} {...props} />
+    <div
+      ref={ref}
+      className={cn("flex flex-col space-y-1.5 p-6", className)}
+      {...props}
+    />
   )
 );
 CardHeader.displayName = "CardHeader";
 
-export const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+const CardTitle = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLHeadingElement>>(
   ({ className, ...props }, ref) => (
-    <div ref={ref} className={cn("p-5", className)} {...props} />
+    <h3
+      ref={ref}
+      className={cn(
+        "text-lg font-semibold leading-none tracking-tight text-[var(--text-primary)]",
+        className
+      )}
+      {...props}
+    />
+  )
+);
+CardTitle.displayName = "CardTitle";
+
+const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
+  ({ className, ...props }, ref) => (
+    <p
+      ref={ref}
+      className={cn("text-sm text-[var(--text-secondary)]", className)}
+      {...props}
+    />
+  )
+);
+CardDescription.displayName = "CardDescription";
+
+const CardContent = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
   )
 );
 CardContent.displayName = "CardContent";
 
-export const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("p-5 pt-0 flex items-center gap-3", className)}
+      className={cn("flex items-center p-6 pt-0", className)}
       {...props}
     />
   )
 );
 CardFooter.displayName = "CardFooter";
+
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, cardVariants };

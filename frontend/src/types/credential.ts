@@ -13,13 +13,6 @@ export const TIER_NAMES: Record<Tier, string> = {
   3: "Whale",
 } as const;
 
-export const TIER_EMOJIS: Record<Tier, string> = {
-  0: "🦐",
-  1: "🦀",
-  2: "🐟",
-  3: "🐋",
-} as const;
-
 export const TIER_RANGES: Record<Tier, string> = {
   0: "< 1 BTC",
   1: "1-10 BTC",

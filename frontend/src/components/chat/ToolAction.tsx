@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useBtcWallet } from "@/hooks/useBtcWallet";
 import { useCredential } from "@/hooks/useCredential";
+import { TierBadge, TierIcon } from "@/components/credential/TierBadge";
 import type { ToolUse } from "@/types/api";
 import type { Tier, CredentialType } from "@/types/credential";
-import { Wallet, PenTool, Send, CheckCircle, AlertCircle } from "lucide-react";
-import { TIER_NAMES, TIER_EMOJIS, TIER_RANGES } from "@/types/credential";
+import { Wallet, PenTool, Send, CheckCircle2, AlertCircle, Bitcoin } from "lucide-react";
+import { TIER_NAMES, TIER_RANGES } from "@/types/credential";
 
 interface ToolActionProps {
   toolUse: ToolUse;
@@ -40,7 +41,7 @@ export function ToolAction({ toolUse, onAction }: ToolActionProps) {
 
     default:
       return (
-        <div className="p-4 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--border-default)]">
+        <div className="p-4 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
           <p className="text-sm text-[var(--text-muted)]">
             Processing: {name}
           </p>
@@ -54,7 +55,7 @@ export function ToolAction({ toolUse, onAction }: ToolActionProps) {
 // ============================================
 
 function ConnectWalletAction({ onAction }: { onAction: (action: string, data?: unknown) => void }) {
-  const { connect, isConnecting, isConnected, address, pubkey } = useBtcWallet();
+  const { connect, isConnecting, isConnected, address } = useBtcWallet();
   const [error, setError] = useState<string | null>(null);
 
   const handleConnect = async () => {
@@ -62,20 +63,20 @@ function ConnectWalletAction({ onAction }: { onAction: (action: string, data?: u
     try {
       const result = await connect();
       onAction("connected", result);
-    } catch (err) {
+    } catch {
       setError("Failed to connect wallet. Please try again.");
     }
   };
 
   if (isConnected && address) {
     return (
-      <div className="p-4 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--success)]/30">
+      <div className="p-4 bg-white rounded-2xl border border-[var(--success)]/30 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[var(--success)]/20 flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-[var(--success)]" />
+          <div className="w-12 h-12 rounded-xl bg-[var(--success-light)] flex items-center justify-center">
+            <CheckCircle2 className="w-6 h-6 text-[var(--success)]" />
           </div>
           <div>
-            <p className="font-medium text-[var(--text-primary)]">Wallet Connected</p>
+            <p className="font-semibold text-[var(--text-primary)]">Wallet Connected</p>
             <p className="text-sm text-[var(--text-muted)] font-mono">
               {address.slice(0, 10)}...{address.slice(-6)}
             </p>
@@ -86,13 +87,13 @@ function ConnectWalletAction({ onAction }: { onAction: (action: string, data?: u
   }
 
   return (
-    <div className="p-4 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--border-default)]">
-      <div className="flex items-start gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
-          <span className="text-white font-bold">₿</span>
+    <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
+          <Bitcoin className="w-6 h-6 text-amber-600" />
         </div>
         <div>
-          <p className="font-medium text-[var(--text-primary)]">Connect Bitcoin Wallet</p>
+          <p className="font-semibold text-[var(--text-primary)]">Connect Bitcoin Wallet</p>
           <p className="text-sm text-[var(--text-muted)]">
             Connect via Xverse to prove wallet ownership
           </p>
@@ -100,8 +101,8 @@ function ConnectWalletAction({ onAction }: { onAction: (action: string, data?: u
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 mb-3 text-sm text-[var(--error)]">
-          <AlertCircle className="w-4 h-4" />
+        <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--error-light)] rounded-xl text-sm text-[var(--error)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
@@ -142,7 +143,7 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
     try {
       const signature = await signMessage(message);
       onAction("signed", { signature, message, pubkey });
-    } catch (err) {
+    } catch {
       setError("Signing failed. Please try again.");
     } finally {
       setIsSigning(false);
@@ -150,13 +151,13 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
   };
 
   return (
-    <div className="p-4 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--border-default)]">
-      <div className="flex items-start gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-[var(--accent-subtle)] flex items-center justify-center">
-          <PenTool className="w-5 h-5 text-[var(--accent-primary)]" />
+    <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-xl bg-[var(--primary-light)] flex items-center justify-center">
+          <PenTool className="w-6 h-6 text-[var(--primary)]" />
         </div>
         <div>
-          <p className="font-medium text-[var(--text-primary)]">Sign Message</p>
+          <p className="font-semibold text-[var(--text-primary)]">Sign Message</p>
           <p className="text-sm text-[var(--text-muted)]">
             Verify wallet ownership (no BTC will be spent)
           </p>
@@ -164,8 +165,8 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
       </div>
 
       {/* Message preview */}
-      <div className="mb-4 p-3 bg-[var(--bg-secondary)] rounded-lg border border-[var(--border-subtle)]">
-        <p className="text-xs text-[var(--text-muted)] mb-2 font-mono uppercase tracking-wider">
+      <div className="mb-4 p-4 bg-[var(--grey-100)] rounded-xl">
+        <p className="text-xs text-[var(--text-muted)] mb-2 font-semibold uppercase tracking-wider">
           Message to sign
         </p>
         <pre className="text-sm text-[var(--text-secondary)] font-mono whitespace-pre-wrap">
@@ -174,10 +175,10 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
       </div>
 
       {/* Tier badge */}
-      <div className="flex items-center gap-2 mb-4 px-3 py-2 bg-[var(--bg-secondary)] rounded-lg">
-        <span className="text-2xl">{TIER_EMOJIS[tier]}</span>
+      <div className="flex items-center gap-3 mb-5 px-4 py-3 bg-[var(--grey-100)] rounded-xl">
+        <TierIcon tier={tier} size="md" />
         <div>
-          <p className="text-sm font-medium text-[var(--text-primary)]">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">
             {TIER_NAMES[tier]} Tier
           </p>
           <p className="text-xs text-[var(--text-muted)]">{TIER_RANGES[tier]}</p>
@@ -185,8 +186,8 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 mb-3 text-sm text-[var(--error)]">
-          <AlertCircle className="w-4 h-4" />
+        <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--error-light)] rounded-xl text-sm text-[var(--error)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
@@ -250,7 +251,7 @@ function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) 
         setError(result.error || "Failed to issue credential");
         setStatus("idle");
       }
-    } catch (err) {
+    } catch {
       setError("Something went wrong. Please try again.");
       setStatus("idle");
     }
@@ -258,13 +259,13 @@ function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) 
 
   if (status === "success") {
     return (
-      <div className="p-4 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--success)]/30">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-[var(--success)]/20 flex items-center justify-center">
-            <CheckCircle className="w-5 h-5 text-[var(--success)]" />
+      <div className="p-5 bg-white rounded-2xl border border-[var(--success)]/30 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-[var(--success-light)] flex items-center justify-center">
+            <CheckCircle2 className="w-6 h-6 text-[var(--success)]" />
           </div>
           <div>
-            <p className="font-medium text-[var(--text-primary)]">Success!</p>
+            <p className="font-semibold text-[var(--text-primary)]">Success!</p>
             <p className="text-sm text-[var(--text-muted)]">
               Your credential has been issued on Starknet
             </p>
@@ -275,13 +276,13 @@ function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) 
   }
 
   return (
-    <div className="p-4 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--border-default)]">
-      <div className="flex items-start gap-3 mb-4">
-        <div className="w-10 h-10 rounded-full bg-[var(--accent-subtle)] flex items-center justify-center">
-          <Send className="w-5 h-5 text-[var(--accent-primary)]" />
+    <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-xl bg-[var(--primary-light)] flex items-center justify-center">
+          <Send className="w-6 h-6 text-[var(--primary)]" />
         </div>
         <div>
-          <p className="font-medium text-[var(--text-primary)]">Issue Credential</p>
+          <p className="font-semibold text-[var(--text-primary)]">Issue Credential</p>
           <p className="text-sm text-[var(--text-muted)]">
             Submit to Starknet blockchain
           </p>
@@ -290,7 +291,7 @@ function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) 
 
       {/* Progress steps */}
       {status === "issuing" && (
-        <div className="mb-4 space-y-2">
+        <div className="mb-5 p-4 bg-[var(--grey-100)] rounded-xl space-y-3">
           <ProgressStep label="Verifying signature" status="complete" />
           <ProgressStep label="Creating commitment" status="active" />
           <ProgressStep label="Submitting transaction" status="pending" />
@@ -298,8 +299,8 @@ function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) 
       )}
 
       {error && (
-        <div className="flex items-center gap-2 mb-3 text-sm text-[var(--error)]">
-          <AlertCircle className="w-4 h-4" />
+        <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--error-light)] rounded-xl text-sm text-[var(--error)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
@@ -325,19 +326,19 @@ function ProgressStep({
   status: "pending" | "active" | "complete";
 }) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-3">
       {status === "complete" && (
-        <div className="w-4 h-4 rounded-full bg-[var(--success)] flex items-center justify-center">
-          <svg className="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="w-5 h-5 rounded-full bg-[var(--success)] flex items-center justify-center">
+          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
           </svg>
         </div>
       )}
       {status === "active" && (
-        <div className="w-4 h-4 rounded-full border-2 border-[var(--accent-primary)] border-t-transparent animate-spin" />
+        <div className="w-5 h-5 rounded-full border-2 border-[var(--primary)] border-t-transparent animate-spin" />
       )}
       {status === "pending" && (
-        <div className="w-4 h-4 rounded-full border-2 border-[var(--border-default)]" />
+        <div className="w-5 h-5 rounded-full border-2 border-[var(--grey-300)]" />
       )}
       <span
         className={`text-sm ${

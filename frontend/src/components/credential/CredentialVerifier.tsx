@@ -7,7 +7,8 @@ import { Card } from "@/components/ui/Card";
 import { useCredential } from "@/hooks/useCredential";
 import type { VerifyCredentialResponse } from "@/types/api";
 import type { Tier } from "@/types/credential";
-import { TIER_NAMES, TIER_EMOJIS, TIER_RANGES } from "@/types/credential";
+import { TIER_NAMES, TIER_RANGES } from "@/types/credential";
+import { TierIcon } from "@/components/credential/TierBadge";
 import { Search, Shield, CheckCircle, XCircle, ExternalLink, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 
@@ -15,11 +16,11 @@ interface CredentialVerifierProps {
   initialId?: string;
 }
 
-const tierGradients: Record<Tier, string> = {
-  0: "from-pink-500/20 to-rose-600/20",
-  1: "from-orange-500/20 to-amber-600/20",
-  2: "from-cyan-500/20 to-blue-600/20",
-  3: "from-violet-500/20 to-purple-600/20",
+const tierCardBg: Record<Tier, string> = {
+  0: "from-[var(--tier-shrimp-bg)] to-white",
+  1: "from-[var(--tier-crab-bg)] to-white",
+  2: "from-[var(--tier-fish-bg)] to-white",
+  3: "from-[var(--tier-whale-bg)] to-white",
 };
 
 export function CredentialVerifier({ initialId }: CredentialVerifierProps) {
@@ -100,10 +101,9 @@ function ValidCredentialResult({
     <Card
       className={cn(
         "relative overflow-hidden",
-        `bg-gradient-to-br ${tierGradients[tier]}`,
+        `bg-gradient-to-br ${tierCardBg[tier]}`,
         "border-[var(--success)]/30"
       )}
-      glow
     >
       {/* Holographic effect */}
       <div className="absolute inset-0 holographic opacity-10 pointer-events-none" />
@@ -125,9 +125,11 @@ function ValidCredentialResult({
         </div>
 
         {/* Credential Info */}
-        <div className="text-center mb-6 py-6 border-y border-[var(--border-subtle)]">
-          <span className="text-6xl block mb-3">{TIER_EMOJIS[tier]}</span>
-          <h4 className="text-2xl font-bold text-[var(--text-primary)] font-[var(--font-display)]">
+        <div className="text-center mb-6 py-6 border-y border-[var(--border-light)]">
+          <div className="flex justify-center mb-4">
+            <TierIcon tier={tier} size="lg" />
+          </div>
+          <h4 className="text-2xl font-bold text-[var(--text-primary)]">
             {TIER_NAMES[tier]} Tier
           </h4>
           <p className="text-[var(--text-secondary)]">

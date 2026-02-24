@@ -51,10 +51,10 @@ export function ChatInput({
       <div
         className={cn(
           "relative flex items-end gap-2 p-2",
-          "bg-[var(--bg-secondary)] border border-[var(--border-default)]",
-          "rounded-2xl",
+          "bg-white border border-[var(--border)]",
+          "rounded-2xl shadow-sm",
           "transition-all duration-200",
-          "focus-within:border-[var(--accent-primary)] focus-within:shadow-[0_0_0_1px_var(--accent-primary)]",
+          "focus-within:border-[var(--primary)] focus-within:ring-2 focus-within:ring-[var(--primary-light)]",
           disabled && "opacity-60"
         )}
       >
@@ -92,8 +92,8 @@ export function ChatInput({
             "w-10 h-10 rounded-xl",
             "transition-all duration-200",
             message.trim() && !disabled
-              ? "bg-[var(--accent-primary)] text-white hover:bg-[var(--accent-secondary)] shadow-md"
-              : "bg-[var(--bg-tertiary)] text-[var(--text-muted)] cursor-not-allowed"
+              ? "bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] shadow-sm"
+              : "bg-[var(--grey-100)] text-[var(--text-muted)] cursor-not-allowed"
           )}
         >
           <Send className="w-5 h-5" />
@@ -101,8 +101,8 @@ export function ChatInput({
       </div>
 
       {/* Hint */}
-      <p className="text-center text-xs text-[var(--text-subtle)] mt-2">
-        Press <kbd className="px-1.5 py-0.5 bg-[var(--bg-secondary)] rounded text-[var(--text-muted)]">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-[var(--bg-secondary)] rounded text-[var(--text-muted)]">Shift+Enter</kbd> for new line
+      <p className="text-center text-xs text-[var(--text-muted)] mt-2">
+        Press <kbd className="px-1.5 py-0.5 bg-[var(--grey-100)] rounded text-[var(--text-secondary)] font-mono text-[10px]">Enter</kbd> to send, <kbd className="px-1.5 py-0.5 bg-[var(--grey-100)] rounded text-[var(--text-secondary)] font-mono text-[10px]">Shift+Enter</kbd> for new line
       </p>
     </form>
   );

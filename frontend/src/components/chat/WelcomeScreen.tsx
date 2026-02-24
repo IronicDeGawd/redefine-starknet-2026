@@ -1,7 +1,8 @@
 "use client";
 
-import { Shield, Zap, Eye, Lock } from "lucide-react";
-import { TIER_EMOJIS } from "@/types/credential";
+import { Shield, Zap, Eye, Lock, Crown, Diamond, Hexagon, CircleDot } from "lucide-react";
+import { TierIcon } from "@/components/credential/TierBadge";
+import { TIER_NAMES, TIER_RANGES, type Tier } from "@/types/credential";
 
 interface WelcomeScreenProps {
   onQuickAction: (message: string) => void;
@@ -11,26 +12,38 @@ const quickActions = [
   {
     label: "Prove I'm a Whale",
     message: "I want to prove I hold more than 100 BTC",
-    emoji: TIER_EMOJIS[3],
-    gradient: "from-violet-500 to-purple-600",
+    tier: 3 as Tier,
+    icon: Crown,
+    color: "text-violet-600",
+    bgColor: "bg-violet-50",
+    hoverBg: "hover:bg-violet-100",
   },
   {
     label: "Prove I'm a Fish",
     message: "I want to create a Fish tier credential (10-100 BTC)",
-    emoji: TIER_EMOJIS[2],
-    gradient: "from-cyan-500 to-blue-600",
+    tier: 2 as Tier,
+    icon: Diamond,
+    color: "text-blue-600",
+    bgColor: "bg-blue-50",
+    hoverBg: "hover:bg-blue-100",
   },
   {
     label: "Prove I'm a Crab",
     message: "I want to prove I hold between 1-10 BTC",
-    emoji: TIER_EMOJIS[1],
-    gradient: "from-orange-500 to-amber-600",
+    tier: 1 as Tier,
+    icon: Hexagon,
+    color: "text-amber-600",
+    bgColor: "bg-amber-50",
+    hoverBg: "hover:bg-amber-100",
   },
   {
     label: "Learn More",
     message: "What is ZKCred and how does it work?",
-    emoji: "💡",
-    gradient: "from-emerald-500 to-teal-600",
+    tier: null,
+    icon: Shield,
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-50",
+    hoverBg: "hover:bg-emerald-100",
   },
 ];
 
@@ -39,36 +52,51 @@ const features = [
     icon: Shield,
     title: "Privacy First",
     description: "Your wallet address is never revealed",
+    color: "text-[var(--primary)]",
+    bgColor: "bg-[var(--primary-light)]",
   },
   {
     icon: Zap,
     title: "On-Chain Proof",
     description: "Verifiable credentials on Starknet",
+    color: "text-amber-600",
+    bgColor: "bg-amber-50",
   },
   {
     icon: Eye,
     title: "Selective Disclosure",
     description: "Prove holdings without exact amounts",
+    color: "text-cyan-600",
+    bgColor: "bg-cyan-50",
   },
   {
     icon: Lock,
     title: "Cryptographic Security",
     description: "Secured by Bitcoin signatures",
+    color: "text-emerald-600",
+    bgColor: "bg-emerald-50",
   },
+];
+
+const tiers: { tier: Tier; icon: typeof CircleDot }[] = [
+  { tier: 0, icon: CircleDot },
+  { tier: 1, icon: Hexagon },
+  { tier: 2, icon: Diamond },
+  { tier: 3, icon: Crown },
 ];
 
 export function WelcomeScreen({ onQuickAction }: WelcomeScreenProps) {
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
+    <div className="max-w-3xl mx-auto py-8 px-4">
       {/* Hero */}
       <div className="text-center mb-12">
-        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--accent-primary)] to-cyan-500 shadow-[0_0_60px_var(--accent-glow)] mb-6">
-          <span className="text-4xl">🔐</span>
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-lg mb-6">
+          <Shield className="w-10 h-10 text-white" />
         </div>
 
-        <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4 font-[var(--font-display)]">
+        <h1 className="text-3xl md:text-4xl font-bold text-[var(--text-primary)] mb-4">
           Welcome to{" "}
-          <span className="bg-gradient-to-r from-[var(--accent-primary)] to-cyan-400 bg-clip-text text-transparent">
+          <span className="text-gradient">
             ZKCred
           </span>
         </h1>
@@ -85,41 +113,41 @@ export function WelcomeScreen({ onQuickAction }: WelcomeScreenProps) {
           Quick Actions
         </h2>
         <div className="grid grid-cols-2 gap-3">
-          {quickActions.map((action) => (
-            <button
-              key={action.label}
-              onClick={() => onQuickAction(action.message)}
-              className="group relative p-4 bg-[var(--bg-tertiary)] hover:bg-[var(--bg-elevated)] border border-[var(--border-subtle)] hover:border-[var(--border-hover)] rounded-xl transition-all duration-200 text-left"
-            >
-              <span className="text-2xl mb-2 block">{action.emoji}</span>
-              <span className="text-sm font-medium text-[var(--text-primary)] group-hover:text-[var(--accent-secondary)]">
-                {action.label}
-              </span>
-
-              {/* Hover gradient */}
-              <div
-                className={`absolute inset-0 rounded-xl bg-gradient-to-br ${action.gradient} opacity-0 group-hover:opacity-10 transition-opacity duration-200 pointer-events-none`}
-              />
-            </button>
-          ))}
+          {quickActions.map((action) => {
+            const Icon = action.icon;
+            return (
+              <button
+                key={action.label}
+                onClick={() => onQuickAction(action.message)}
+                className={`group p-4 bg-white ${action.hoverBg} border border-[var(--border)] hover:border-[var(--border-hover)] rounded-2xl transition-all duration-200 text-left shadow-sm hover:shadow-md`}
+              >
+                <div className={`w-10 h-10 rounded-xl ${action.bgColor} flex items-center justify-center mb-3`}>
+                  <Icon className={`w-5 h-5 ${action.color}`} />
+                </div>
+                <span className="text-sm font-medium text-[var(--text-primary)]">
+                  {action.label}
+                </span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Features */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-2 gap-4 mb-8">
         {features.map((feature) => (
           <div
             key={feature.title}
-            className="flex items-start gap-3 p-4 bg-[var(--bg-secondary)]/50 rounded-lg"
+            className="flex items-start gap-3 p-4 bg-white rounded-xl border border-[var(--border-light)]"
           >
-            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-[var(--accent-subtle)] flex items-center justify-center">
-              <feature.icon className="w-4 h-4 text-[var(--accent-primary)]" />
+            <div className={`flex-shrink-0 w-10 h-10 rounded-xl ${feature.bgColor} flex items-center justify-center`}>
+              <feature.icon className={`w-5 h-5 ${feature.color}`} />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-[var(--text-primary)]">
+              <h3 className="text-sm font-semibold text-[var(--text-primary)]">
                 {feature.title}
               </h3>
-              <p className="text-xs text-[var(--text-muted)]">
+              <p className="text-xs text-[var(--text-muted)] mt-0.5">
                 {feature.description}
               </p>
             </div>
@@ -128,24 +156,21 @@ export function WelcomeScreen({ onQuickAction }: WelcomeScreenProps) {
       </div>
 
       {/* Tier legend */}
-      <div className="mt-8 p-4 bg-[var(--bg-secondary)]/50 rounded-xl border border-[var(--border-subtle)]">
-        <h3 className="text-sm font-medium text-[var(--text-muted)] uppercase tracking-wider mb-3">
-          BTC Tiers
+      <div className="p-6 bg-white rounded-2xl border border-[var(--border-light)] shadow-sm">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
+          BTC Tier System
         </h3>
-        <div className="flex flex-wrap gap-4 justify-center">
-          {[
-            { tier: 0, name: "Shrimp", range: "< 1 BTC", color: "text-pink-400" },
-            { tier: 1, name: "Crab", range: "1-10 BTC", color: "text-orange-400" },
-            { tier: 2, name: "Fish", range: "10-100 BTC", color: "text-cyan-400" },
-            { tier: 3, name: "Whale", range: "100+ BTC", color: "text-violet-400" },
-          ].map((t) => (
-            <div key={t.tier} className="flex items-center gap-2">
-              <span className="text-lg">{TIER_EMOJIS[t.tier as 0 | 1 | 2 | 3]}</span>
+        <div className="flex flex-wrap gap-6 justify-center">
+          {tiers.map(({ tier }) => (
+            <div key={tier} className="flex items-center gap-3">
+              <TierIcon tier={tier} size="md" />
               <div>
-                <span className={`text-sm font-medium ${t.color}`}>{t.name}</span>
-                <span className="text-xs text-[var(--text-muted)] ml-1">
-                  ({t.range})
+                <span className="text-sm font-medium text-[var(--text-primary)]">
+                  {TIER_NAMES[tier]}
                 </span>
+                <p className="text-xs text-[var(--text-muted)]">
+                  {TIER_RANGES[tier]}
+                </p>
               </div>
             </div>
           ))}

@@ -6,8 +6,10 @@ import { useAppStore } from "@/stores/useAppStore";
 import { CredentialCard } from "@/components/credential/CredentialCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { TIER_EMOJIS, type Credential, type CredentialType } from "@/types/credential";
+import type { Credential, CredentialType } from "@/types/credential";
 import { Plus, Filter, Grid, List, BadgeCheck } from "lucide-react";
+import { TierIcon } from "@/components/credential/TierBadge";
+import { TIER_NAMES, type Tier } from "@/types/credential";
 import { cn } from "@/lib/cn";
 
 type FilterType = "all" | CredentialType;
@@ -153,22 +155,14 @@ function EmptyState({
 
         {/* Tier preview */}
         {!hasFilter && (
-          <div className="mt-8 pt-8 border-t border-[var(--border-subtle)]">
+          <div className="mt-8 pt-8 border-t border-[var(--border-light)]">
             <p className="text-sm text-[var(--text-muted)] mb-4">Available tiers:</p>
             <div className="flex justify-center gap-6">
-              {[0, 1, 2, 3].map((tier) => (
-                <div key={tier} className="text-center">
-                  <span className="text-3xl block mb-1">
-                    {TIER_EMOJIS[tier as 0 | 1 | 2 | 3]}
-                  </span>
+              {([0, 1, 2, 3] as Tier[]).map((tier) => (
+                <div key={tier} className="text-center flex flex-col items-center gap-2">
+                  <TierIcon tier={tier} size="md" />
                   <span className="text-xs text-[var(--text-muted)]">
-                    {tier === 0
-                      ? "Shrimp"
-                      : tier === 1
-                      ? "Crab"
-                      : tier === 2
-                      ? "Fish"
-                      : "Whale"}
+                    {TIER_NAMES[tier]}
                   </span>
                 </div>
               ))}

@@ -3,8 +3,9 @@
 import { cn } from "@/lib/cn";
 import type { Message } from "@/stores/useAppStore";
 import { ToolAction } from "./ToolAction";
-import { TIER_EMOJIS, type Tier, type CredentialType } from "@/types/credential";
-import { Bot, User } from "lucide-react";
+import { TierIcon } from "@/components/credential/TierBadge";
+import { TIER_NAMES, type Tier, type CredentialType } from "@/types/credential";
+import { Bot, User, CheckCircle2, ExternalLink } from "lucide-react";
 
 interface ChatMessageProps {
   message: Message;
@@ -26,22 +27,22 @@ export function ChatMessage({ message, onToolAction }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex gap-3 animate-slide-up",
+        "flex gap-3 animate-fade-in",
         isUser ? "flex-row-reverse" : ""
       )}
     >
       <div
         className={cn(
-          "flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center",
+          "flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center shadow-sm",
           isUser
-            ? "bg-gradient-to-br from-cyan-500 to-blue-600"
-            : "bg-gradient-to-br from-[var(--accent-primary)] to-violet-600"
+            ? "bg-[var(--primary)]"
+            : "bg-white border border-[var(--border)]"
         )}
       >
         {isUser ? (
           <User className="w-5 h-5 text-white" />
         ) : (
-          <Bot className="w-5 h-5 text-white" />
+          <Bot className="w-5 h-5 text-[var(--primary)]" />
         )}
       </div>
 
@@ -53,10 +54,10 @@ export function ChatMessage({ message, onToolAction }: ChatMessageProps) {
       >
         <div
           className={cn(
-            "px-4 py-3 rounded-2xl",
+            "px-4 py-3 rounded-2xl shadow-sm",
             isUser
-              ? "bg-[var(--accent-primary)] text-white rounded-br-md"
-              : "bg-[var(--bg-tertiary)] text-[var(--text-primary)] border border-[var(--border-subtle)] rounded-bl-md"
+              ? "bg-[var(--primary)] text-white rounded-br-md"
+              : "bg-white text-[var(--text-primary)] border border-[var(--border-light)] rounded-bl-md"
           )}
         >
           <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
@@ -78,7 +79,7 @@ export function ChatMessage({ message, onToolAction }: ChatMessageProps) {
         ) : null}
 
         {hasError ? (
-          <div className="px-4 py-3 bg-[var(--error)]/10 border border-[var(--error)]/30 rounded-xl">
+          <div className="px-4 py-3 bg-[var(--error-light)] border border-[var(--error)]/20 rounded-xl">
             <p className="text-sm text-[var(--error)]">
               {message.toolResult?.error ?? "Action failed. Please try again."}
             </p>
@@ -104,31 +105,27 @@ function CredentialSuccess({ data }: { data: CredentialSuccessData }) {
   return (
     <div className="space-y-3">
       <div className="flex items-center gap-2 text-[var(--success)]">
-        <div className="w-5 h-5 rounded-full bg-[var(--success)] flex items-center justify-center">
-          <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-          </svg>
-        </div>
-        <span className="text-sm font-medium">Credential Issued!</span>
+        <CheckCircle2 className="w-5 h-5" />
+        <span className="text-sm font-semibold">Credential Issued!</span>
       </div>
 
-      <div className="p-4 bg-[var(--bg-tertiary)] rounded-xl border border-[var(--border-default)]">
-        <div className="flex items-center gap-3 mb-3">
-          <span className="text-3xl">{TIER_EMOJIS[data.tier]}</span>
+      <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+        <div className="flex items-center gap-4 mb-4">
+          <TierIcon tier={data.tier} size="lg" />
           <div>
-            <p className="font-semibold text-[var(--text-primary)]">
-              {getTierName(data.tier)} Tier
+            <p className="font-semibold text-[var(--text-primary)] text-lg">
+              {TIER_NAMES[data.tier]} Tier
             </p>
             <p className="text-sm text-[var(--text-muted)]">
-              {data.type === "btc_tier" ? "BTC Holdings" : "Wallet Age"}
+              {data.type === "btc_tier" ? "BTC Holdings Credential" : "Wallet Age Credential"}
             </p>
           </div>
         </div>
 
-        <div className="space-y-2">
+        <div className="space-y-3 pt-4 border-t border-[var(--border-light)]">
           <div className="flex items-center justify-between text-sm">
             <span className="text-[var(--text-muted)]">Credential ID</span>
-            <code className="font-mono text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-0.5 rounded">
+            <code className="font-mono text-[var(--text-secondary)] bg-[var(--grey-100)] px-2 py-1 rounded-lg text-xs">
               {truncateId(data.credentialId)}
             </code>
           </div>
@@ -139,9 +136,10 @@ function CredentialSuccess({ data }: { data: CredentialSuccessData }) {
                 href={`https://sepolia.starkscan.co/tx/${data.transactionHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="font-mono text-[var(--accent-secondary)] hover:underline"
+                className="inline-flex items-center gap-1 font-mono text-[var(--primary)] hover:underline text-xs"
               >
                 {truncateId(data.transactionHash)}
+                <ExternalLink className="w-3 h-3" />
               </a>
             </div>
           ) : null}
@@ -157,16 +155,6 @@ function formatTime(date: Date): string {
     minute: "2-digit",
     hour12: true,
   }).format(date);
-}
-
-function getTierName(tier: Tier): string {
-  const names: Record<Tier, string> = {
-    0: "Shrimp",
-    1: "Crab",
-    2: "Fish",
-    3: "Whale",
-  };
-  return names[tier];
 }
 
 function truncateId(id: string): string {

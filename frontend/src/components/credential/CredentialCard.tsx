@@ -4,10 +4,10 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { TierBadge } from "./TierBadge";
+import { TierIcon } from "./TierBadge";
 import type { Credential, Tier } from "@/types/credential";
-import { TIER_EMOJIS, TIER_NAMES, TIER_RANGES } from "@/types/credential";
-import { Copy, ExternalLink, Share2, Trash2, Check, Shield } from "lucide-react";
+import { TIER_NAMES, TIER_RANGES } from "@/types/credential";
+import { Copy, ExternalLink, Share2, Trash2, Check, Shield, CheckCircle2 } from "lucide-react";
 
 interface CredentialCardProps {
   credential: Credential;
@@ -15,18 +15,11 @@ interface CredentialCardProps {
   onRevoke?: () => void;
 }
 
-const tierGradients: Record<Tier, string> = {
-  0: "from-pink-500/20 to-rose-600/20",
-  1: "from-orange-500/20 to-amber-600/20",
-  2: "from-cyan-500/20 to-blue-600/20",
-  3: "from-violet-500/20 to-purple-600/20",
-};
-
-const tierBorders: Record<Tier, string> = {
-  0: "border-pink-500/30",
-  1: "border-orange-500/30",
-  2: "border-cyan-500/30",
-  3: "border-violet-500/30",
+const tierCardBg: Record<Tier, string> = {
+  0: "bg-gradient-to-br from-[var(--tier-shrimp-bg)] to-white",
+  1: "bg-gradient-to-br from-[var(--tier-crab-bg)] to-white",
+  2: "bg-gradient-to-br from-[var(--tier-fish-bg)] to-white",
+  3: "bg-gradient-to-br from-[var(--tier-whale-bg)] to-white",
 };
 
 export function CredentialCard({ credential, variant = "compact", onRevoke }: CredentialCardProps) {
@@ -67,28 +60,26 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
         interactive
         className={cn(
           "relative overflow-hidden",
-          `bg-gradient-to-br ${tierGradients[credential.tier]}`,
-          tierBorders[credential.tier]
+          tierCardBg[credential.tier]
         )}
       >
-        {/* Holographic shimmer effect */}
-        <div className="absolute inset-0 holographic opacity-10 pointer-events-none" />
-
         <div className="relative p-5">
-          {/* Emoji & Tier */}
+          {/* Icon & Tier */}
           <div className="text-center mb-4">
-            <span className="text-5xl block mb-2">{TIER_EMOJIS[credential.tier]}</span>
-            <h3 className="text-lg font-bold text-[var(--text-primary)] font-[var(--font-display)]">
+            <div className="flex justify-center mb-3">
+              <TierIcon tier={credential.tier} size="lg" />
+            </div>
+            <h3 className="text-lg font-bold text-[var(--text-primary)]">
               {TIER_NAMES[credential.tier]} Tier
             </h3>
-            <p className="text-sm text-[var(--text-muted)]">
+            <p className="text-sm text-[var(--text-secondary)]">
               {credential.credentialType === "btc_tier" ? "BTC Holdings" : "Wallet Age"}
             </p>
-            <p className="text-xs text-[var(--text-subtle)]">{TIER_RANGES[credential.tier]}</p>
+            <p className="text-xs text-[var(--text-muted)]">{TIER_RANGES[credential.tier]}</p>
           </div>
 
           {/* Status & Date */}
-          <div className="flex items-center justify-between text-sm mb-4 py-2 border-t border-b border-[var(--border-subtle)]">
+          <div className="flex items-center justify-between text-sm mb-4 py-3 border-t border-b border-[var(--border-light)]">
             <span className="text-[var(--text-muted)]">Status</span>
             <span className="flex items-center gap-1.5">
               <span
@@ -97,7 +88,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
                   credential.revoked ? "bg-[var(--error)]" : "bg-[var(--success)]"
                 )}
               />
-              <span className="text-[var(--text-primary)]">
+              <span className={credential.revoked ? "text-[var(--error)]" : "text-[var(--success)]"}>
                 {credential.revoked ? "Revoked" : "Active"}
               </span>
             </span>
@@ -106,7 +97,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
           {/* ID */}
           <div className="mb-4">
             <p className="text-xs text-[var(--text-muted)] mb-1">Credential ID</p>
-            <code className="text-xs font-mono text-[var(--text-secondary)] bg-[var(--bg-secondary)] px-2 py-1 rounded block truncate">
+            <code className="text-xs font-mono text-[var(--text-secondary)] bg-white px-2 py-1.5 rounded-lg border border-[var(--border-light)] block truncate">
               {credential.id}
             </code>
           </div>
@@ -114,7 +105,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
           {/* Actions */}
           <div className="flex gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={copyId}
               className="flex-1"
@@ -123,7 +114,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
               {copied ? "Copied" : "Copy"}
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={shareCredential}
               className="flex-1"
@@ -142,18 +133,16 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
     <Card
       className={cn(
         "relative overflow-hidden",
-        `bg-gradient-to-br ${tierGradients[credential.tier]}`,
-        tierBorders[credential.tier]
+        tierCardBg[credential.tier]
       )}
     >
-      {/* Holographic effect */}
-      <div className="absolute inset-0 holographic opacity-5 pointer-events-none" />
-
       <div className="relative p-6">
         {/* Header */}
         <div className="text-center mb-6 pt-4">
-          <span className="text-6xl block mb-4">{TIER_EMOJIS[credential.tier]}</span>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] font-[var(--font-display)] mb-1">
+          <div className="flex justify-center mb-4">
+            <TierIcon tier={credential.tier} size="lg" />
+          </div>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-1">
             {TIER_NAMES[credential.tier]} Tier
           </h2>
           <p className="text-[var(--text-secondary)]">
@@ -163,14 +152,14 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
         </div>
 
         {/* Credential ID */}
-        <div className="mb-6 p-4 bg-[var(--bg-secondary)] rounded-xl">
+        <div className="mb-6 p-4 bg-white rounded-xl border border-[var(--border-light)]">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-mono">
+            <span className="text-xs text-[var(--text-muted)] uppercase tracking-wider font-semibold">
               Credential ID
             </span>
             <button
               onClick={copyId}
-              className="text-[var(--accent-secondary)] hover:text-[var(--accent-primary)] transition-colors"
+              className="text-[var(--primary)] hover:text-[var(--primary-hover)] transition-colors"
             >
               {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
             </button>
@@ -195,7 +184,9 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
                     credential.revoked ? "bg-[var(--error)]" : "bg-[var(--success)]"
                   )}
                 />
-                {credential.revoked ? "Revoked" : "Active"}
+                <span className={credential.revoked ? "text-[var(--error)]" : "text-[var(--success)]"}>
+                  {credential.revoked ? "Revoked" : "Active"}
+                </span>
               </span>
             }
           />
@@ -203,9 +194,9 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
         </div>
 
         {/* What this proves */}
-        <div className="mb-6 p-4 bg-[var(--bg-secondary)] rounded-xl border border-[var(--border-subtle)]">
-          <h4 className="text-sm font-medium text-[var(--text-primary)] mb-3 flex items-center gap-2">
-            <Shield className="w-4 h-4 text-[var(--success)]" />
+        <div className="mb-6 p-4 bg-white rounded-xl border border-[var(--border-light)]">
+          <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-3 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-[var(--primary)]" />
             What this proves
           </h4>
           <ul className="space-y-2">
@@ -222,7 +213,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
             Share Link
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             onClick={() =>
               window.open(
                 `https://sepolia.starkscan.co/search/${credential.id}`,
@@ -237,12 +228,12 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
 
         {/* Revoke */}
         {onRevoke && !credential.revoked && (
-          <div className="mt-4 pt-4 border-t border-[var(--border-subtle)]">
+          <div className="mt-4 pt-4 border-t border-[var(--border-light)]">
             <Button
               variant="ghost"
               size="sm"
               onClick={onRevoke}
-              className="w-full text-[var(--error)] hover:bg-[var(--error)]/10"
+              className="w-full text-[var(--error)] hover:bg-[var(--error-light)]"
             >
               <Trash2 className="w-4 h-4" />
               Revoke Credential
@@ -266,14 +257,7 @@ function DetailRow({ label, value }: { label: string; value: React.ReactNode }) 
 function ProofItem({ text }: { text: string }) {
   return (
     <li className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">
-      <svg
-        className="w-4 h-4 text-[var(--success)] flex-shrink-0"
-        fill="none"
-        viewBox="0 0 24 24"
-        stroke="currentColor"
-      >
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
+      <CheckCircle2 className="w-4 h-4 text-[var(--success)] flex-shrink-0" />
       {text}
     </li>
   );
