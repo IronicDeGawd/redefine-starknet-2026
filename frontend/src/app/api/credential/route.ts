@@ -17,6 +17,7 @@ import {
   validateIssueRequest,
   getErrorMessage,
   parseStarknetError,
+  verifyBitcoinSignature,
 } from "@/lib/utils";
 import type {
   IssueCredentialRequest,
@@ -68,20 +69,37 @@ export async function POST(
 
     const request = body as IssueCredentialRequest;
 
-    // 4. Hash the public key (privacy: don't store raw pubkey on-chain)
+    // 4. Verify Bitcoin signature to prove wallet ownership
+    const isValidSignature = await verifyBitcoinSignature(
+      request.message,
+      request.signature,
+      request.btcPubkey
+    );
+
+    if (!isValidSignature) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: "Invalid signature - cannot verify wallet ownership",
+        },
+        { status: 401 }
+      );
+    }
+
+    // 5. Hash the public key (privacy: don't store raw pubkey on-chain)
     const pubkeyHash = hashPubkey(request.btcPubkey);
 
-    // 5. Generate random salt for credential ID
+    // 6. Generate random salt for credential ID
     const salt = generateRandomSalt();
 
-    // 6. Convert credential type to felt
+    // 7. Convert credential type to felt
     const credentialTypeFelt = stringToFelt(request.credentialType);
 
-    // 7. Get contract instance with server account
+    // 8. Get contract instance with server account
     const registry = getCredentialRegistryWriter();
     const provider = getProvider();
 
-    // 8. Call contract to issue credential
+    // 9. Call contract to issue credential
     const tx = await registry.issue_credential(
       pubkeyHash,
       credentialTypeFelt,
@@ -89,10 +107,10 @@ export async function POST(
       salt
     );
 
-    // 9. Wait for transaction confirmation
+    // 10. Wait for transaction confirmation
     const receipt = await provider.waitForTransaction(tx.transaction_hash);
 
-    // 10. Extract credential ID from events
+    // 11. Extract credential ID from events
     let credentialId: string | undefined;
 
     // Type guard to check if receipt has events
@@ -116,7 +134,7 @@ export async function POST(
       credentialId = `computed:${pubkeyHash.slice(0, 16)}`;
     }
 
-    // 11. Return success
+    // 12. Return success
     return NextResponse.json({
       success: true,
       credentialId,

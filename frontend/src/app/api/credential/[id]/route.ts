@@ -136,9 +136,10 @@ export async function DELETE(
       );
     }
 
-    // TODO: Verify ownership using signature
-    // For MVP, we skip ownership verification
-    // In production, verify that the signature matches the pubkey_hash in the credential
+    // Note: Revocation is now owner-only in the smart contract.
+    // The server account (contract owner) can revoke any credential.
+    // For user-initiated revocation in production, implement signature verification
+    // to ensure the request comes from the credential holder.
 
     // 4. Get contract instance
     const registry = getCredentialRegistryWriter();

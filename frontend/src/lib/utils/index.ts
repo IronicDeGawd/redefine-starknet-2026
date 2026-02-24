@@ -7,6 +7,7 @@ export {
   formatCredentialId,
   isValidHex,
   normalizeHex,
+  verifyBitcoinSignature,
 } from "./crypto";
 
 export {
