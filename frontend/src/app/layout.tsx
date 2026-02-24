@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/layout/Sidebar";
-import { MobileNav } from "@/components/layout/MobileNav";
-import { Header } from "@/components/layout/Header";
+import { AppShell } from "@/components/layout/AppShell";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -51,19 +49,7 @@ export default function RootLayout({
       className={`${inter.variable} ${spaceGrotesk.variable}`}
     >
       <body className="antialiased bg-[var(--background-secondary)]">
-        <div className="flex min-h-screen">
-          {/* Desktop Sidebar */}
-          <Sidebar />
-
-          {/* Main Content */}
-          <div className="flex-1 md:ml-[247px] flex flex-col min-h-screen">
-            <Header />
-            <main className="flex-1 flex flex-col p-6 pb-20 md:pb-6">{children}</main>
-          </div>
-
-          {/* Mobile Navigation */}
-          <MobileNav />
-        </div>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );
