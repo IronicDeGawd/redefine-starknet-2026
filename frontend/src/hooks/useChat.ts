@@ -9,6 +9,7 @@ export function useChat() {
     messages,
     isAgentThinking,
     pendingToolUse,
+    sessionId,
     addMessage,
     updateMessage,
     setAgentThinking,
@@ -44,10 +45,14 @@ export function useChat() {
 
         const response = await fetch("/api/chat", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Session-Id": sessionId,
+          },
           body: JSON.stringify({
             messages: apiMessages,
             toolResults,
+            sessionId,
           }),
         });
 
@@ -81,7 +86,7 @@ export function useChat() {
         setAgentThinking(false);
       }
     },
-    [messages, addMessage, setAgentThinking, setPendingToolUse]
+    [messages, sessionId, addMessage, setAgentThinking, setPendingToolUse]
   );
 
   const submitToolResult = useCallback(
