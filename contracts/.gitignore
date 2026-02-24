@@ -1,0 +1,15 @@
+# Cairo build artifacts
+target/
+
+# Starknet Foundry cache
+.snfoundry_cache/
+
+# Environment variables
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
