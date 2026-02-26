@@ -20,6 +20,7 @@ import {
   hashToFelt,
 } from "@/lib/utils";
 import { verifyBalance, verifyWalletAge } from "@/lib/oracle";
+import { createCommitment } from "@/lib/crypto/commitment";
 import type { ApiError } from "@/types/api";
 
 export const runtime = "nodejs";
@@ -203,13 +204,23 @@ export async function POST(
     const verificationHashFelt = hashToFelt(proofHash);
     const oracleProviderFelt = stringToFelt(oracleProvider);
 
+    // 10a. Create Poseidon commitment (cryptographic binding)
+    const commitment = createCommitment(
+      pubkeyHash,
+      credentialTypeFelt,
+      tier,
+      verificationHashFelt,
+      salt
+    );
+
     const tx = await registry.issue_credential(
       pubkeyHash,
       credentialTypeFelt,
       tier,
       salt,
       verificationHashFelt,
-      oracleProviderFelt
+      oracleProviderFelt,
+      commitment
     );
 
     // 11. Wait for transaction confirmation
