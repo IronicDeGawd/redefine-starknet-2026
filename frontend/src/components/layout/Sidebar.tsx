@@ -13,14 +13,18 @@ import {
   FlaskConical,
   Crown,
   Code,
+  Plug,
+  Lock,
 } from "lucide-react";
 
 const navItems = [
+  { href: "/connect", label: "Connect", icon: Plug },
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/credentials", label: "Credentials", icon: BadgeCheck },
   { href: "/verify", label: "Verify", icon: Shield },
   { href: "/playground", label: "Playground", icon: FlaskConical },
   { href: "/lounge", label: "Lounge", icon: Crown },
+  { href: "/crypto", label: "Cryptography", icon: Lock },
   { href: "/examples/discord", label: "Examples", icon: Code },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
