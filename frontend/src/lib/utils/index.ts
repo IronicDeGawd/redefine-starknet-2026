@@ -8,6 +8,7 @@ export {
   isValidHex,
   normalizeHex,
   verifyBitcoinSignature,
+  hashToFelt,
 } from "./crypto";
 
 export {

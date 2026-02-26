@@ -17,6 +17,7 @@ import {
   getErrorMessage,
   parseStarknetError,
   verifyBitcoinSignature,
+  hashToFelt,
 } from "@/lib/utils";
 import { verifyBalance, verifyWalletAge } from "@/lib/oracle";
 import type { ApiError } from "@/types/api";
@@ -198,12 +199,17 @@ export async function POST(
     const registry = getCredentialRegistryWriter();
     const provider = getProvider();
 
-    // 10. Call contract to issue credential
+    // 10. Call contract to issue credential (with verification metadata)
+    const verificationHashFelt = hashToFelt(proofHash);
+    const oracleProviderFelt = stringToFelt(oracleProvider);
+
     const tx = await registry.issue_credential(
       pubkeyHash,
       credentialTypeFelt,
       tier,
-      salt
+      salt,
+      verificationHashFelt,
+      oracleProviderFelt
     );
 
     // 11. Wait for transaction confirmation

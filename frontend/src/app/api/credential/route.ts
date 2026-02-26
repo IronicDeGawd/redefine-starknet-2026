@@ -100,11 +100,14 @@ export async function POST(
     const provider = getProvider();
 
     // 9. Call contract to issue credential
+    // Self-declared credentials have no oracle verification (pass 0)
     const tx = await registry.issue_credential(
       pubkeyHash,
       credentialTypeFelt,
       request.tier,
-      salt
+      salt,
+      0, // verification_hash: none for self-declared
+      0  // oracle_provider: none for self-declared
     );
 
     // 10. Wait for transaction confirmation

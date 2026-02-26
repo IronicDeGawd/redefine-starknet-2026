@@ -18,6 +18,8 @@ export const CREDENTIAL_REGISTRY_ABI = [
       { name: "tier", type: "core::integer::u8" },
       { name: "issued_at", type: "core::integer::u64" },
       { name: "revoked", type: "core::bool" },
+      { name: "verification_hash", type: "core::felt252" },
+      { name: "oracle_provider", type: "core::felt252" },
     ],
   },
   {
@@ -32,6 +34,8 @@ export const CREDENTIAL_REGISTRY_ABI = [
           { name: "credential_type", type: "core::felt252" },
           { name: "tier", type: "core::integer::u8" },
           { name: "salt", type: "core::felt252" },
+          { name: "verification_hash", type: "core::felt252" },
+          { name: "oracle_provider", type: "core::felt252" },
         ],
         outputs: [{ type: "core::felt252" }],
         state_mutability: "external",
@@ -92,6 +96,8 @@ export const CREDENTIAL_REGISTRY_ABI = [
       { name: "credential_type", type: "core::felt252", kind: "data" },
       { name: "tier", type: "core::integer::u8", kind: "data" },
       { name: "timestamp", type: "core::integer::u64", kind: "data" },
+      { name: "verification_hash", type: "core::felt252", kind: "data" },
+      { name: "oracle_provider", type: "core::felt252", kind: "data" },
     ],
   },
   {

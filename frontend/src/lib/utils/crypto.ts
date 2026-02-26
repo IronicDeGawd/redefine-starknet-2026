@@ -96,6 +96,16 @@ export function normalizeHex(str: string): string {
 }
 
 /**
+ * Convert a hex hash string to a felt252-compatible value.
+ * Truncates to 31 bytes (248 bits) to fit within felt252 (< 2^251).
+ */
+export function hashToFelt(hexHash: string): string {
+  const clean = hexHash.startsWith("0x") ? hexHash.slice(2) : hexHash;
+  // Take first 62 hex chars (31 bytes) to fit in felt252
+  return "0x" + clean.slice(0, 62);
+}
+
+/**
  * Verify a BIP-322 Bitcoin signature against a message and address.
  * Uses bip322-js which handles all address types (P2WPKH, P2SH-P2WPKH, P2TR)
  * and both ECDSA (legacy) and BIP-322 (SegWit/Taproot) signature formats.
