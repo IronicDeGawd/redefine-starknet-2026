@@ -9,13 +9,19 @@ import {
   Shield,
   Settings,
   BookOpen,
-  LogOut
+  LogOut,
+  FlaskConical,
+  Crown,
+  Code,
 } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/credentials", label: "Credentials", icon: BadgeCheck },
   { href: "/verify", label: "Verify", icon: Shield },
+  { href: "/playground", label: "Playground", icon: FlaskConical },
+  { href: "/lounge", label: "Lounge", icon: Crown },
+  { href: "/examples/discord", label: "Examples", icon: Code },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
@@ -39,7 +45,9 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 flex flex-col px-4 py-6 gap-1">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = item.href === "/"
+            ? pathname === "/"
+            : pathname.startsWith(item.href);
           const Icon = item.icon;
 
           return (
@@ -103,7 +111,9 @@ export function SidebarCollapsed() {
       {/* Navigation */}
       <nav className="flex-1 flex flex-col items-center py-6 gap-2">
         {navItems.map((item) => {
-          const isActive = pathname === item.href;
+          const isActive = item.href === "/"
+            ? pathname === "/"
+            : pathname.startsWith(item.href);
           const Icon = item.icon;
 
           return (
