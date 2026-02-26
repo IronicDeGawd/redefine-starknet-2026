@@ -52,15 +52,16 @@ pub mod CredentialVerifier {
             registry.verify_tier(credential_id, 0)
         }
 
-        fn get_tier(self: @ContractState, credential_id: felt252) -> u8 {
+        /// [M-3 FIX] Returns (exists, tier) — distinguishes nonexistent from tier-0
+        fn get_tier(self: @ContractState, credential_id: felt252) -> (bool, u8) {
             let registry = self._get_registry();
             let credential = registry.get_credential(credential_id);
 
             if credential.pubkey_hash == 0 || credential.revoked {
-                return 0;
+                return (false, 0);
             }
 
-            credential.tier
+            (true, credential.tier)
         }
 
         fn batch_verify(

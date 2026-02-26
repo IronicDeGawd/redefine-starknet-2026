@@ -12,6 +12,8 @@ pub struct Credential {
     pub tier: u8,
     /// Unix timestamp when credential was issued
     pub issued_at: u64,
+    /// [L-1] Unix timestamp when credential expires (0 = never expires)
+    pub expires_at: u64,
     /// Whether the credential has been revoked
     pub revoked: bool,
     /// SHA-256 hash of the oracle/API verification data
@@ -87,7 +89,8 @@ pub trait ICredentialVerifier<TContractState> {
     fn is_fish_or_above(self: @TContractState, credential_id: felt252) -> bool;
     fn is_crab_or_above(self: @TContractState, credential_id: felt252) -> bool;
     fn is_holder(self: @TContractState, credential_id: felt252) -> bool;
-    fn get_tier(self: @TContractState, credential_id: felt252) -> u8;
+    /// [M-3 FIX] Returns (exists: bool, tier: u8) to distinguish nonexistent from tier-0
+    fn get_tier(self: @TContractState, credential_id: felt252) -> (bool, u8);
     fn batch_verify(
         self: @TContractState, credential_ids: Array<felt252>, min_tier: u8,
     ) -> Array<bool>;

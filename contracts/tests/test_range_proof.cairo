@@ -6,8 +6,6 @@ use starknet::ContractAddress;
 use zkcred::range_proof_verifier::{
     IRangeProofVerifierDispatcher, IRangeProofVerifierDispatcherTrait,
 };
-use core::pedersen::PedersenTrait;
-use core::hash::HashStateTrait;
 
 fn OWNER() -> ContractAddress {
     starknet::contract_address_const::<0x123>()
@@ -20,11 +18,6 @@ fn deploy_verifier() -> (ContractAddress, IRangeProofVerifierDispatcher) {
 
     let dispatcher = IRangeProofVerifierDispatcher { contract_address };
     (contract_address, dispatcher)
-}
-
-/// Helper: compute Pedersen commitment matching the contract
-fn compute_pedersen_commitment(value: felt252, blinding_factor: felt252) -> felt252 {
-    PedersenTrait::new(value).update(blinding_factor).finalize()
 }
 
 #[test]
@@ -46,101 +39,85 @@ fn test_tier_boundaries_default() {
     let (min1, _) = verifier.get_tier_bounds(1);
     assert(min1 == 100000000, 'Tier 1 min wrong');
 
-    let (min3, max3) = verifier.get_tier_bounds(3);
+    let (min3, _) = verifier.get_tier_bounds(3);
     assert(min3 == 10000000000, 'Tier 3 min wrong');
-    assert(max3 == 0, 'Tier 3 max unbounded');
+
+    // [H-5] Tier 3 should be explicitly unbounded
+    assert(verifier.is_tier_unbounded(3), 'Tier 3 should be unbounded');
+    assert(!verifier.is_tier_unbounded(0), 'Tier 0 not unbounded');
 }
 
+// [C-2 FIX] Oracle-attested range proof — no secrets on-chain
 #[test]
-fn test_verify_range_proof_tier0() {
-    let (_, verifier) = deploy_verifier();
+fn test_oracle_attested_proof_tier0() {
+    let (contract_address, verifier) = deploy_verifier();
 
-    let value: felt252 = 50000000; // 0.5 BTC in satoshis (Tier 0)
-    let blinding: felt252 = 0xdeadbeef;
-    let commitment = compute_pedersen_commitment(value, blinding);
+    let commitment: felt252 = 0xabcdef123456;
     let credential_id: felt252 = 0x111;
 
-    let result = verifier.verify_range_proof(credential_id, commitment, value, blinding, 0);
-    assert(result, 'Proof should verify for tier 0');
+    // Owner (oracle) attests the range proof
+    start_cheat_caller_address(contract_address, OWNER());
+    let result = verifier.verify_range_proof(credential_id, commitment, 0);
+    stop_cheat_caller_address(contract_address);
 
+    assert(result, 'Proof should be attested');
     assert(verifier.is_proven(credential_id), 'Should be proven');
 
-    let (verified, tier, stored_commitment) = verifier.get_proof(credential_id);
+    let (verified, tier, stored) = verifier.get_proof(credential_id);
     assert(verified, 'Should be verified');
     assert(tier == 0, 'Wrong tier');
-    assert(stored_commitment == commitment, 'Wrong commitment');
+    assert(stored == commitment, 'Wrong commitment');
 }
 
 #[test]
-fn test_verify_range_proof_tier1() {
-    let (_, verifier) = deploy_verifier();
+fn test_oracle_attested_proof_tier3() {
+    let (contract_address, verifier) = deploy_verifier();
 
-    let value: felt252 = 500000000; // 5 BTC in satoshis (Tier 1)
-    let blinding: felt252 = 0xcafe;
-    let commitment = compute_pedersen_commitment(value, blinding);
+    let commitment: felt252 = 0xfeedface;
 
-    let result = verifier.verify_range_proof(0x222, commitment, value, blinding, 1);
-    assert(result, 'Proof should verify for tier 1');
+    start_cheat_caller_address(contract_address, OWNER());
+    let result = verifier.verify_range_proof(0x333, commitment, 3);
+    stop_cheat_caller_address(contract_address);
+
+    assert(result, 'Tier 3 proof should verify');
 }
 
+// [H-3 FIX] Non-owner cannot submit proofs
 #[test]
-fn test_verify_range_proof_tier3_unbounded() {
-    let (_, verifier) = deploy_verifier();
+#[should_panic(expected: 'Caller is not owner')]
+fn test_non_owner_cannot_attest() {
+    let (contract_address, verifier) = deploy_verifier();
 
-    let value: felt252 = 50000000000; // 500 BTC in satoshis (Tier 3, unbounded upper)
-    let blinding: felt252 = 0xbabe;
-    let commitment = compute_pedersen_commitment(value, blinding);
-
-    let result = verifier.verify_range_proof(0x333, commitment, value, blinding, 3);
-    assert(result, 'Proof should verify for tier 3');
+    let attacker = starknet::contract_address_const::<0x999>();
+    start_cheat_caller_address(contract_address, attacker);
+    verifier.verify_range_proof(0x444, 0xbadbeef, 0);
+    stop_cheat_caller_address(contract_address);
 }
 
+// [H-5 FIX] Explicit unbounded flag
 #[test]
-fn test_wrong_commitment_fails() {
-    let (_, verifier) = deploy_verifier();
-
-    let value: felt252 = 50000000;
-    let blinding: felt252 = 0xdeadbeef;
-    let fake_commitment: felt252 = 0x12345; // Not the real commitment
-
-    let result = verifier.verify_range_proof(0x444, fake_commitment, value, blinding, 0);
-    assert(!result, 'Should fail wrong commit');
-}
-
-#[test]
-fn test_value_out_of_range_fails() {
-    let (_, verifier) = deploy_verifier();
-
-    // Value is 500 BTC (tier 3), but claiming tier 0
-    let value: felt252 = 50000000000;
-    let blinding: felt252 = 0xfeed;
-    let commitment = compute_pedersen_commitment(value, blinding);
-
-    let result = verifier.verify_range_proof(0x555, commitment, value, blinding, 0);
-    assert(!result, 'Should fail out of range');
-}
-
-#[test]
-fn test_value_below_tier_min_fails() {
-    let (_, verifier) = deploy_verifier();
-
-    // Value is 0.5 BTC (tier 0), but claiming tier 2
-    let value: felt252 = 50000000;
-    let blinding: felt252 = 0xbeef;
-    let commitment = compute_pedersen_commitment(value, blinding);
-
-    let result = verifier.verify_range_proof(0x666, commitment, value, blinding, 2);
-    assert(!result, 'Should fail: below tier 2 min');
-}
-
-#[test]
-fn test_set_tier_bounds() {
+fn test_set_tier_bounds_with_unbounded() {
     let (contract_address, verifier) = deploy_verifier();
 
     start_cheat_caller_address(contract_address, OWNER());
-    verifier.set_tier_bounds(0, 0, 50000000);
+    // Set tier 2 to unbounded
+    verifier.set_tier_bounds(2, 1000000000, 0, true);
     stop_cheat_caller_address(contract_address);
 
+    assert(verifier.is_tier_unbounded(2), 'Should be unbounded');
+    let (min, _) = verifier.get_tier_bounds(2);
+    assert(min == 1000000000, 'Min should be set');
+}
+
+#[test]
+fn test_set_tier_bounds_bounded() {
+    let (contract_address, verifier) = deploy_verifier();
+
+    start_cheat_caller_address(contract_address, OWNER());
+    verifier.set_tier_bounds(0, 0, 50000000, false);
+    stop_cheat_caller_address(contract_address);
+
+    assert(!verifier.is_tier_unbounded(0), 'Should be bounded');
     let (min, max) = verifier.get_tier_bounds(0);
     assert(min == 0, 'Min should be 0');
     assert(max == 50000000, 'Max should be updated');
@@ -153,23 +130,18 @@ fn test_set_tier_bounds_not_owner() {
 
     let non_owner = starknet::contract_address_const::<0x999>();
     start_cheat_caller_address(contract_address, non_owner);
-    verifier.set_tier_bounds(0, 0, 100);
+    verifier.set_tier_bounds(0, 0, 100, false);
     stop_cheat_caller_address(contract_address);
 }
 
 #[test]
 fn test_total_proofs_counter() {
-    let (_, verifier) = deploy_verifier();
+    let (contract_address, verifier) = deploy_verifier();
 
-    let v1: felt252 = 50000000;
-    let b1: felt252 = 0xaaa;
-    let c1 = compute_pedersen_commitment(v1, b1);
-    verifier.verify_range_proof(0x001, c1, v1, b1, 0);
-
-    let v2: felt252 = 500000000;
-    let b2: felt252 = 0xbbb;
-    let c2 = compute_pedersen_commitment(v2, b2);
-    verifier.verify_range_proof(0x002, c2, v2, b2, 1);
+    start_cheat_caller_address(contract_address, OWNER());
+    verifier.verify_range_proof(0x001, 0xaaa, 0);
+    verifier.verify_range_proof(0x002, 0xbbb, 1);
+    stop_cheat_caller_address(contract_address);
 
     assert(verifier.get_total_proofs() == 2, 'Should have 2 proofs');
 }
@@ -178,4 +150,33 @@ fn test_total_proofs_counter() {
 fn test_not_proven_by_default() {
     let (_, verifier) = deploy_verifier();
     assert(!verifier.is_proven(0x999), 'Should not be proven');
+}
+
+#[test]
+#[should_panic(expected: 'Empty commitment')]
+fn test_zero_commitment_rejected() {
+    let (contract_address, verifier) = deploy_verifier();
+
+    start_cheat_caller_address(contract_address, OWNER());
+    verifier.verify_range_proof(0x555, 0, 0);
+    stop_cheat_caller_address(contract_address);
+}
+
+// [M-2] Re-attesting same credential_id should NOT inflate counter
+#[test]
+fn test_reattestation_does_not_inflate_counter() {
+    let (contract_address, verifier) = deploy_verifier();
+
+    start_cheat_caller_address(contract_address, OWNER());
+    verifier.verify_range_proof(0x001, 0xaaa, 0);
+    assert(verifier.get_total_proofs() == 1, 'Should be 1 after first');
+
+    // Re-attest same credential with updated tier
+    verifier.verify_range_proof(0x001, 0xbbb, 1);
+    assert(verifier.get_total_proofs() == 1, 'Should still be 1');
+
+    // Different credential should increment
+    verifier.verify_range_proof(0x002, 0xccc, 2);
+    assert(verifier.get_total_proofs() == 2, 'Should be 2 now');
+    stop_cheat_caller_address(contract_address);
 }

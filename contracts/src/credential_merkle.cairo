@@ -110,6 +110,7 @@ pub mod CredentialMerkle {
                 let (left, right) = if is_left {
                     // We're the left child, get the right sibling
                     let right_sibling = self.nodes.read((level, current_index + 1));
+                    // [H-4 FIX] Use zero-hash if sibling is empty
                     let right_val = if right_sibling == 0 {
                         self.zeros.read(level)
                     } else {
@@ -119,7 +120,13 @@ pub mod CredentialMerkle {
                 } else {
                     // We're the right child, get the left sibling
                     let left_sibling = self.nodes.read((level, current_index - 1));
-                    (left_sibling, current_hash)
+                    // [H-4 FIX] Symmetric zero-hash substitution for left branch
+                    let left_val = if left_sibling == 0 {
+                        self.zeros.read(level)
+                    } else {
+                        left_sibling
+                    };
+                    (left_val, current_hash)
                 };
 
                 current_hash = poseidon_hash_span(array![left, right].span());
@@ -150,6 +157,8 @@ pub mod CredentialMerkle {
             index: u32,
         ) -> bool {
             assert(proof.len() == TREE_DEPTH, 'Invalid proof length');
+            // [C-3 FIX] Reject proofs for indices beyond the frontier
+            assert(index < self.leaf_count.read(), 'Index out of range');
 
             let mut current_hash = leaf;
             let mut current_index = index;

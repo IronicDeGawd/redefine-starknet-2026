@@ -1,6 +1,13 @@
-/// RangeProofVerifier - On-chain range proof verification using Pedersen commitments
-/// Proves a value is within a range without revealing the exact value
-/// Used for: "My balance puts me in Tier 2 (10-100 BTC)" without revealing actual balance
+/// RangeProofVerifier - Oracle-attested range proof verification
+///
+/// The oracle server (owner) verifies off-chain that a value falls within a tier's
+/// range, computes a Pedersen commitment C = H(value, blinding), and submits ONLY
+/// the commitment + tier claim on-chain. The value and blinding factor NEVER appear
+/// in calldata, preserving privacy.
+///
+/// [C-2 FIX] Removed plaintext value/blinding from on-chain params
+/// [H-3 FIX] Only owner can submit proofs (no unauthorized overwrites)
+/// [H-5 FIX] Replaced 0-as-unbounded with explicit tier_unbounded flag
 
 #[starknet::contract]
 pub mod RangeProofVerifier {
@@ -9,21 +16,13 @@ pub mod RangeProofVerifier {
         StoragePointerReadAccess, StoragePointerWriteAccess, StorageMapReadAccess,
         StorageMapWriteAccess, Map,
     };
-    use core::pedersen::PedersenTrait;
-    use core::hash::HashStateTrait;
     use core::num::traits::Zero;
-
-    // ============ Tier Boundaries ============
-    // These define the ranges for each tier level
-    // Tier 0: [0, TIER_1_MIN)
-    // Tier 1: [TIER_1_MIN, TIER_2_MIN)
-    // Tier 2: [TIER_2_MIN, TIER_3_MIN)
-    // Tier 3: [TIER_3_MIN, ∞)
 
     /// Stored range proof record
     #[derive(Drop, Copy, Serde, starknet::Store)]
     struct RangeProof {
         /// The Pedersen commitment: C = H(value, blinding_factor)
+        /// Computed off-chain by the oracle — preimage never goes on-chain
         commitment: felt252,
         /// Credential ID this proof is linked to
         credential_id: felt252,
@@ -31,9 +30,9 @@ pub mod RangeProofVerifier {
         proven_tier: u8,
         /// Minimum value for the proven tier
         range_min: felt252,
-        /// Maximum value for the proven tier (0 = unbounded)
+        /// Maximum value for the proven tier
         range_max: felt252,
-        /// Timestamp when proof was verified
+        /// Timestamp when proof was attested
         verified_at: u64,
         /// Whether the proof was successfully verified
         verified: bool,
@@ -47,12 +46,14 @@ pub mod RangeProofVerifier {
         proofs: Map<felt252, RangeProof>,
         /// Number of verified proofs
         total_proofs: u256,
-        /// Contract owner
+        /// Contract owner (the oracle server)
         owner: ContractAddress,
-        /// Tier boundaries (tier_level => min_value)
+        /// Tier boundaries: tier_level => min_value
         tier_min: Map<u8, felt252>,
-        /// Tier boundaries (tier_level => max_value, 0 = unbounded)
+        /// Tier boundaries: tier_level => max_value
         tier_max: Map<u8, felt252>,
+        /// [H-5 FIX] Whether a tier has an unbounded upper limit
+        tier_unbounded: Map<u8, bool>,
     }
 
     // ============ Events ============
@@ -78,6 +79,7 @@ pub mod RangeProofVerifier {
         pub tier: u8,
         pub min_value: felt252,
         pub max_value: felt252,
+        pub unbounded: bool,
     }
 
     // ============ Constructor ============
@@ -89,75 +91,63 @@ pub mod RangeProofVerifier {
         self.total_proofs.write(0);
 
         // Default BTC tier boundaries (in satoshis)
-        // Tier 0: 0 - 99,999,999 (< 1 BTC)
-        // Tier 1: 100,000,000 - 999,999,999 (1-10 BTC)
-        // Tier 2: 1,000,000,000 - 9,999,999,999 (10-100 BTC)
-        // Tier 3: 10,000,000,000+ (100+ BTC)
         self.tier_min.write(0, 0);
         self.tier_max.write(0, 99999999);
+        self.tier_unbounded.write(0, false);
+
         self.tier_min.write(1, 100000000);
         self.tier_max.write(1, 999999999);
+        self.tier_unbounded.write(1, false);
+
         self.tier_min.write(2, 1000000000);
         self.tier_max.write(2, 9999999999);
+        self.tier_unbounded.write(2, false);
+
         self.tier_min.write(3, 10000000000);
-        self.tier_max.write(3, 0); // 0 = unbounded
+        self.tier_max.write(3, 0);
+        self.tier_unbounded.write(3, true); // Tier 3 is unbounded
+    }
+
+    // ============ Internal ============
+
+    #[generate_trait]
+    impl InternalImpl of InternalTrait {
+        fn _only_owner(self: @ContractState) {
+            let caller = get_caller_address();
+            assert(caller == self.owner.read(), 'Caller is not owner');
+        }
     }
 
     // ============ External Functions ============
 
     #[abi(embed_v0)]
     impl RangeProofVerifierImpl of super::IRangeProofVerifier<ContractState> {
-        /// Submit and verify a range proof
-        /// The proof demonstrates that the committed value falls within [range_min, range_max]
+        /// Submit an oracle-attested range proof
         ///
-        /// Simplified range proof scheme:
-        /// 1. Prover computes commitment C = Pedersen(value, blinding_factor)
-        /// 2. Prover provides: C, value, blinding_factor, credential_id, tier
-        /// 3. Verifier checks: C == Pedersen(value, blinding_factor) AND value in [tier_min, tier_max]
+        /// [C-2 FIX] The oracle server (owner) performs verification off-chain:
+        ///   1. Oracle obtains the real value (e.g., BTC balance)
+        ///   2. Oracle checks value is in [tier_min, tier_max] for the claimed tier
+        ///   3. Oracle computes commitment C = Pedersen(value, blinding)
+        ///   4. Oracle submits ONLY (credential_id, commitment, tier) on-chain
+        ///   5. The value and blinding_factor NEVER appear on-chain
         ///
-        /// Note: In a full ZK implementation, the value and blinding_factor would NOT be revealed.
-        /// This demonstrates the concept — a production system would use a proper ZK circuit (STARK/SNARK).
+        /// [H-3 FIX] Only owner can call — prevents unauthorized overwrites
         fn verify_range_proof(
             ref self: ContractState,
             credential_id: felt252,
             commitment: felt252,
-            value: felt252,
-            blinding_factor: felt252,
             tier: u8,
         ) -> bool {
+            // Only the oracle server can attest range proofs
+            self._only_owner();
             assert(tier <= 3, 'Invalid tier');
+            assert(commitment != 0, 'Empty commitment');
 
-            // 1. Verify the Pedersen commitment
-            let computed_commitment = PedersenTrait::new(value)
-                .update(blinding_factor)
-                .finalize();
-
-            if computed_commitment != commitment {
-                return false;
-            }
-
-            // 2. Check value is within the tier's range
+            // Look up the tier boundaries
             let range_min = self.tier_min.read(tier);
             let range_max = self.tier_max.read(tier);
 
-            // Value must be >= range_min
-            // Using felt252 comparison (works for reasonable positive values)
-            let value_u256: u256 = value.into();
-            let min_u256: u256 = range_min.into();
-
-            if value_u256 < min_u256 {
-                return false;
-            }
-
-            // If range_max is non-zero, value must be <= range_max
-            if range_max != 0 {
-                let max_u256: u256 = range_max.into();
-                if value_u256 > max_u256 {
-                    return false;
-                }
-            }
-
-            // 3. Store the verified proof
+            // Store the attested proof
             let timestamp = get_block_timestamp();
             let proof = RangeProof {
                 commitment,
@@ -169,9 +159,13 @@ pub mod RangeProofVerifier {
                 verified: true,
             };
 
+            // [M-2 FIX] Only increment counter for new proofs, not re-attestations
+            let is_new = !self.proofs.read(credential_id).verified;
             self.proofs.write(credential_id, proof);
-            let current = self.total_proofs.read();
-            self.total_proofs.write(current + 1);
+            if is_new {
+                let current = self.total_proofs.read();
+                self.total_proofs.write(current + 1);
+            }
 
             self.emit(RangeProofVerified {
                 credential_id,
@@ -204,21 +198,28 @@ pub mod RangeProofVerifier {
             (self.tier_min.read(tier), self.tier_max.read(tier))
         }
 
+        /// Check if a tier has unbounded upper limit
+        fn is_tier_unbounded(self: @ContractState, tier: u8) -> bool {
+            self.tier_unbounded.read(tier)
+        }
+
         /// Set tier boundaries (owner only)
+        /// [H-5 FIX] Explicit unbounded flag — no ambiguity with 0
         fn set_tier_bounds(
             ref self: ContractState,
             tier: u8,
             min_value: felt252,
             max_value: felt252,
+            unbounded: bool,
         ) {
-            let caller = get_caller_address();
-            assert(caller == self.owner.read(), 'Caller is not owner');
+            self._only_owner();
             assert(tier <= 3, 'Invalid tier');
 
             self.tier_min.write(tier, min_value);
             self.tier_max.write(tier, max_value);
+            self.tier_unbounded.write(tier, unbounded);
 
-            self.emit(TierBoundarySet { tier, min_value, max_value });
+            self.emit(TierBoundarySet { tier, min_value, max_value, unbounded });
         }
 
         /// Get the contract owner
@@ -233,12 +234,11 @@ use starknet::ContractAddress;
 
 #[starknet::interface]
 pub trait IRangeProofVerifier<TContractState> {
+    /// Oracle-attested range proof — no secrets on-chain
     fn verify_range_proof(
         ref self: TContractState,
         credential_id: felt252,
         commitment: felt252,
-        value: felt252,
-        blinding_factor: felt252,
         tier: u8,
     ) -> bool;
 
@@ -246,6 +246,9 @@ pub trait IRangeProofVerifier<TContractState> {
     fn is_proven(self: @TContractState, credential_id: felt252) -> bool;
     fn get_total_proofs(self: @TContractState) -> u256;
     fn get_tier_bounds(self: @TContractState, tier: u8) -> (felt252, felt252);
-    fn set_tier_bounds(ref self: TContractState, tier: u8, min_value: felt252, max_value: felt252);
+    fn is_tier_unbounded(self: @TContractState, tier: u8) -> bool;
+    fn set_tier_bounds(
+        ref self: TContractState, tier: u8, min_value: felt252, max_value: felt252, unbounded: bool,
+    );
     fn get_owner(self: @TContractState) -> ContractAddress;
 }
