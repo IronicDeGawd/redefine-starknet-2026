@@ -124,9 +124,13 @@ Returns the credential ID and transaction hash.`,
           type: "string",
           description: "Bitcoin public key (hex encoded)",
         },
+        btcAddress: {
+          type: "string",
+          description: "Bitcoin address that signed the message",
+        },
         signature: {
           type: "string",
-          description: "Signed message (hex encoded)",
+          description: "BIP-322 signed message (base64 encoded)",
         },
         message: {
           type: "string",
@@ -142,7 +146,7 @@ Returns the credential ID and transaction hash.`,
           maximum: 3,
         },
       },
-      required: ["btcPubkey", "signature", "message", "credentialType", "tier"],
+      required: ["btcPubkey", "btcAddress", "signature", "message", "credentialType", "tier"],
     },
   },
   {

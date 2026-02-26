@@ -13,6 +13,7 @@ export function useCredential() {
   const issueCredential = useCallback(
     async (params: {
       btcPubkey: string;
+      btcAddress: string;
       signature: string;
       message: string;
       credentialType: CredentialType;

@@ -130,7 +130,7 @@ interface SignRequestActionProps {
 }
 
 function SignRequestAction({ credentialType, tier, onAction }: SignRequestActionProps) {
-  const { signMessage, pubkey } = useBtcWallet();
+  const { signMessage, pubkey, address } = useBtcWallet();
   const [isSigning, setIsSigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -142,7 +142,7 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
 
     try {
       const signature = await signMessage(message);
-      onAction("signed", { signature, message, pubkey });
+      onAction("signed", { signature, message, pubkey, address });
     } catch {
       setError("Signing failed. Please try again.");
     } finally {
@@ -211,6 +211,7 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
 interface IssueCredentialInput {
   signature: string;
   pubkey: string;
+  address: string;
   message: string;
   credential_type: CredentialType;
   tier: Tier;
@@ -233,6 +234,7 @@ function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) 
     try {
       const result = await issueCredential({
         btcPubkey: input.pubkey,
+        btcAddress: input.address,
         signature: input.signature,
         message: input.message,
         credentialType: input.credential_type,
