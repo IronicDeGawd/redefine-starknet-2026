@@ -5,9 +5,6 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import {
   Home,
-  ArrowLeftRight,
-  Wallet,
-  BarChart3,
   BadgeCheck,
   Shield,
   Settings,
@@ -18,8 +15,6 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/credentials", label: "Credentials", icon: BadgeCheck },
   { href: "/verify", label: "Verify", icon: Shield },
-  { href: "/wallet", label: "Wallet", icon: Wallet },
-  { href: "/exchange", label: "Exchange", icon: ArrowLeftRight },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
