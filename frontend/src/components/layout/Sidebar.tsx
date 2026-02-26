@@ -8,6 +8,7 @@ import {
   BadgeCheck,
   Shield,
   Settings,
+  BookOpen,
   LogOut
 } from "lucide-react";
 
@@ -59,8 +60,20 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* Bottom section - Logout */}
-      <div className="p-4 border-t border-[var(--border-light)]">
+      {/* Bottom section */}
+      <div className="p-4 border-t border-[var(--border-light)] space-y-1">
+        <Link
+          href="/docs"
+          className={cn(
+            "flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all duration-200",
+            pathname.startsWith("/docs")
+              ? "bg-[var(--primary)] text-white shadow-sm"
+              : "text-[var(--text-secondary)] hover:bg-[var(--grey-100)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <BookOpen className="w-5 h-5" />
+          <span>Docs</span>
+        </Link>
         <button
           className="flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm text-[var(--error)] hover:bg-[var(--error-light)] w-full transition-all duration-200"
         >
@@ -116,7 +129,21 @@ export function SidebarCollapsed() {
       </nav>
 
       {/* Bottom section */}
-      <div className="p-4 border-t border-[var(--border-light)] flex justify-center">
+      <div className="p-4 border-t border-[var(--border-light)] flex flex-col items-center gap-2">
+        <Link
+          href="/docs"
+          className={cn(
+            "relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-200 group",
+            pathname.startsWith("/docs")
+              ? "bg-[var(--primary)] text-white shadow-sm"
+              : "text-[var(--text-secondary)] hover:bg-[var(--grey-100)] hover:text-[var(--text-primary)]"
+          )}
+        >
+          <BookOpen className="w-5 h-5" />
+          <div className="absolute left-full ml-3 px-3 py-1.5 bg-[var(--grey-800)] text-white text-sm rounded-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 whitespace-nowrap shadow-lg z-50">
+            Docs
+          </div>
+        </Link>
         <button
           className="w-12 h-12 flex items-center justify-center rounded-xl text-[var(--error)] hover:bg-[var(--error-light)] transition-all duration-200"
         >
