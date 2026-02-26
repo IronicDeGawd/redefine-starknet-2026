@@ -679,6 +679,65 @@ h4 { font-size: 1rem; line-height: 1.5; }
 }
 
 /* ============================================
+   Docs Prose Overrides
+   ============================================ */
+
+.prose table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--grey-300);
+  overflow: hidden;
+}
+
+.prose thead {
+  background: var(--grey-100);
+}
+
+.prose th {
+  padding: 10px 14px;
+  border-bottom: 2px solid var(--grey-300);
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.prose td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--grey-200);
+  color: var(--text-secondary);
+}
+
+.prose tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.prose tbody tr:hover {
+  background: var(--grey-100);
+}
+
+.prose pre {
+  border: 1px solid var(--grey-300);
+  background: #1e1e2e;
+  color: #cdd6f4;
+}
+
+.prose pre code {
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  color: inherit;
+  font-size: inherit;
+}
+
+.prose :not(pre) > code {
+  background: var(--grey-100);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.875em;
+  color: var(--text-primary);
+}
+
+/* ============================================
    Utility Classes
    ============================================ */
 
