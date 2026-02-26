@@ -71,12 +71,14 @@ export function validateIssueRequest(body: unknown): ValidationResult {
     return { valid: false, error: "btcPubkey must be a valid hex string" };
   }
 
-  // Validate signature
+  // Validate BTC address
+  if (!request.btcAddress || typeof request.btcAddress !== "string") {
+    return { valid: false, error: "btcAddress is required" };
+  }
+
+  // Validate signature (base64 from BIP-322 or hex from legacy)
   if (!request.signature || typeof request.signature !== "string") {
     return { valid: false, error: "signature is required" };
-  }
-  if (!isValidHex(request.signature)) {
-    return { valid: false, error: "signature must be a valid hex string" };
   }
 
   // Validate message

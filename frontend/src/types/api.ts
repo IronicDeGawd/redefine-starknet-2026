@@ -37,6 +37,7 @@ export interface ChatResponse {
 
 export interface IssueCredentialRequest {
   btcPubkey: string;
+  btcAddress: string;
   signature: string;
   message: string;
   credentialType: CredentialType;
