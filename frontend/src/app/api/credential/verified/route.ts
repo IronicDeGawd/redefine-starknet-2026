@@ -119,11 +119,11 @@ export async function POST(
     const request = body as VerifiedIssueRequest;
     const network = request.network || "mainnet";
 
-    // 4. Verify Bitcoin signature to prove wallet ownership
-    const isValidSignature = await verifyBitcoinSignature(
+    // 4. Verify BIP-322 signature to prove wallet ownership
+    const isValidSignature = verifyBitcoinSignature(
       request.message,
       request.signature,
-      request.btcPubkey
+      request.btcAddress
     );
 
     if (!isValidSignature) {
