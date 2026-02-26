@@ -93,6 +93,14 @@ export async function POST(
 
     const network = body.network || "mainnet";
 
+    // [3.1 + 4.2] Validate network enum — don't silently fall back
+    if (network !== "mainnet" && network !== "sepolia") {
+      return NextResponse.json(
+        { success: false, error: "network must be 'mainnet' or 'sepolia'" },
+        { status: 400 }
+      );
+    }
+
     // 4. Verify ETH balance via public RPC
     const verification = await verifyEthBalance(body.ethAddress, network);
 

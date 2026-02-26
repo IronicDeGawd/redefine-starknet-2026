@@ -109,7 +109,8 @@ export async function getBalance(address: string, network: "mainnet" | "sepolia"
       }
 
       const balanceWei = data.result as string;
-      const balanceEth = parseInt(balanceWei, 16) / 1e18;
+      // [2.1 FIX] Use BigInt — parseInt overflows for balances > ~2.1 ETH
+      const balanceEth = Number(BigInt(balanceWei)) / 1e18;
 
       return {
         address,

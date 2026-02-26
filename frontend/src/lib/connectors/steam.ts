@@ -108,7 +108,7 @@ export async function getPlayerGames(
 ): Promise<SteamProfile> {
   // 1. Get player summary
   const summaryUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v0002/?key=${apiKey}&steamids=${steamId}`;
-  const summaryRes = await fetch(summaryUrl);
+  const summaryRes = await fetch(summaryUrl, { signal: AbortSignal.timeout(10000) });
 
   if (!summaryRes.ok) {
     throw new Error(`Steam API error: ${summaryRes.status}`);
@@ -123,7 +123,7 @@ export async function getPlayerGames(
 
   // 2. Get owned games (requires public profile)
   const gamesUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${apiKey}&steamid=${steamId}&format=json`;
-  const gamesRes = await fetch(gamesUrl);
+  const gamesRes = await fetch(gamesUrl, { signal: AbortSignal.timeout(10000) });
 
   let gamesOwned = 0;
   let totalPlaytimeMinutes = 0;

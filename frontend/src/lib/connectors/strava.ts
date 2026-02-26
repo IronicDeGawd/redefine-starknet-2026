@@ -108,6 +108,7 @@ export async function getAthleteStats(
   // Get athlete profile
   const profileRes = await fetch("https://www.strava.com/api/v3/athlete", {
     headers: { "Authorization": `Bearer ${accessToken}` },
+    signal: AbortSignal.timeout(10000), // [3.5 FIX]
   });
 
   if (!profileRes.ok) {
@@ -119,7 +120,7 @@ export async function getAthleteStats(
   // Get athlete stats (all-time totals)
   const statsRes = await fetch(
     `https://www.strava.com/api/v3/athletes/${athleteId}/stats`,
-    { headers: { "Authorization": `Bearer ${accessToken}` } }
+    { headers: { "Authorization": `Bearer ${accessToken}` }, signal: AbortSignal.timeout(10000) }
   );
 
   let totalRunDistance = 0;

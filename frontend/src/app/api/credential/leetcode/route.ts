@@ -88,6 +88,14 @@ export async function POST(
       );
     }
 
+    // [3.1] Validate LeetCode username format
+    if (!/^[a-zA-Z0-9_-]{1,50}$/.test(body.username)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid LeetCode username format" },
+        { status: 400 }
+      );
+    }
+
     // 3. Verify LeetCode profile via public API
     const verification = await verifyLeetCode(body.username.trim());
 

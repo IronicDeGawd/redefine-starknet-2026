@@ -93,6 +93,7 @@ export async function getProfile(username: string): Promise<LeetCodeProfile> {
       query,
       variables: { username },
     }),
+    signal: AbortSignal.timeout(10000), // [3.5 FIX] 10s timeout
   });
 
   if (!response.ok) {
@@ -142,7 +143,8 @@ export async function verifyLeetCode(username: string): Promise<LeetCodeTierResu
     const queryTimestamp = Date.now();
 
     // Create a hash of the verification data for the commitment
-    const dataString = `${username}:${profile.totalSolved}:${profile.contestRating}:${queryTimestamp}`;
+    // [3.2 FIX] Round contestRating to int for reproducible hashes
+    const dataString = `${username}:${profile.totalSolved}:${Math.round(profile.contestRating)}:${queryTimestamp}`;
     const encoder = new TextEncoder();
     const hashBuffer = await crypto.subtle.digest("SHA-256", encoder.encode(dataString));
     const hashArray = Array.from(new Uint8Array(hashBuffer));

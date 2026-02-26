@@ -1,6 +1,8 @@
 /**
  * /api/credential/strava - Issue Strava athlete tier credentials
- * Requires OAuth access token from Strava
+ *
+ * [1.2 FIX] Reads access token from HttpOnly cookie (set by callback)
+ * [2.2 FIX] Uses athleteId from cookie (verified during token exchange)
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -25,11 +27,6 @@ import type { ApiError } from "@/types/api";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-interface StravaCredentialRequest {
-  accessToken: string;
-  athleteId: number;
-}
-
 export async function POST(
   req: NextRequest
 ): Promise<NextResponse<Record<string, unknown> | ApiError>> {
@@ -41,24 +38,27 @@ export async function POST(
       );
     }
 
-    let body: StravaCredentialRequest;
-    try {
-      body = await req.json();
-    } catch {
+    // [1.2 FIX] Read token from HttpOnly cookie, not request body
+    const accessToken = req.cookies.get("strava_token")?.value;
+    const athleteIdStr = req.cookies.get("strava_athlete_id")?.value;
+
+    if (!accessToken || !athleteIdStr) {
       return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
+        { success: false, error: "Strava OAuth not completed — please connect via the Strava button first" },
+        { status: 401 }
+      );
+    }
+
+    // [2.2 FIX] Use cookie-verified athleteId (from Strava token exchange)
+    const athleteId = parseInt(athleteIdStr, 10);
+    if (!Number.isInteger(athleteId) || athleteId <= 0) {
+      return NextResponse.json(
+        { success: false, error: "Invalid athlete ID" },
         { status: 400 }
       );
     }
 
-    if (!body.accessToken || !body.athleteId) {
-      return NextResponse.json(
-        { success: false, error: "accessToken and athleteId are required" },
-        { status: 400 }
-      );
-    }
-
-    const verification = await verifyStrava(body.accessToken, body.athleteId);
+    const verification = await verifyStrava(accessToken, athleteId);
 
     if (!verification.success) {
       return NextResponse.json(
@@ -67,7 +67,7 @@ export async function POST(
       );
     }
 
-    const pubkeyHash = hashPubkey(String(body.athleteId));
+    const pubkeyHash = hashPubkey(String(athleteId));
     const salt = generateRandomSalt();
     const credentialTypeFelt = stringToFelt("strava_athlete");
     const verificationHashFelt = hashToFelt(verification.verificationProof.dataHash);
@@ -87,7 +87,8 @@ export async function POST(
 
     await provider.waitForTransaction(tx.transaction_hash);
 
-    return NextResponse.json({
+    // Clear the token cookies after successful issuance
+    const response = NextResponse.json({
       success: true,
       credentialId: `${pubkeyHash.slice(0, 16)}`,
       transactionHash: tx.transaction_hash,
@@ -106,6 +107,12 @@ export async function POST(
       },
       commitment,
     });
+
+    // Clean up short-lived cookies
+    response.cookies.delete("strava_token");
+    response.cookies.delete("strava_athlete_id");
+
+    return response;
   } catch (error) {
     console.error("[/api/credential/strava] Error:", error);
     const errorMessage = getErrorMessage(error);

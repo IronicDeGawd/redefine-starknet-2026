@@ -121,9 +121,9 @@ export function verifyBitcoinSignature(
   address: string
 ): boolean {
   try {
-    // Skip verification for mock signatures (development/testing)
-    if (signature.startsWith("mock_signature_")) {
-      console.warn("Accepting mock signature for development");
+    // [1.1 FIX] Mock signatures ONLY in development — never in production
+    if (process.env.NODE_ENV === "development" && signature.startsWith("mock_signature_")) {
+      console.warn("[DEV ONLY] Accepting mock signature");
       return true;
     }
 

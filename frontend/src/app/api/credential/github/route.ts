@@ -58,6 +58,14 @@ export async function POST(
       );
     }
 
+    // [3.1] Validate GitHub username format
+    if (body.username && !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}$/.test(body.username)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid GitHub username format" },
+        { status: 400 }
+      );
+    }
+
     // Verify GitHub profile
     const isOAuth = !!body.accessToken;
     const verification = await verifyGitHub(

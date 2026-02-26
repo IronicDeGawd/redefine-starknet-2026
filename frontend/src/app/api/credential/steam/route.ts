@@ -1,6 +1,8 @@
 /**
  * /api/credential/steam - Issue Steam gamer tier credentials
- * Requires STEAM_API_KEY env var
+ *
+ * [1.4 FIX] Reads steamId from HttpOnly cookie (set by OpenID callback)
+ * instead of trusting caller-supplied steamId.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -25,10 +27,6 @@ import type { ApiError } from "@/types/api";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-interface SteamCredentialRequest {
-  steamId: string;
-}
-
 export async function POST(
   req: NextRequest
 ): Promise<NextResponse<Record<string, unknown> | ApiError>> {
@@ -48,25 +46,26 @@ export async function POST(
       );
     }
 
-    let body: SteamCredentialRequest;
-    try {
-      body = await req.json();
-    } catch {
+    // [1.4 FIX] Read verified steamId from HttpOnly cookie
+    const steamId = req.cookies.get("steam_verified_id")?.value;
+
+    if (!steamId) {
       return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
-        { status: 400 }
+        { success: false, error: "Steam OpenID not completed — please connect via the Steam button first" },
+        { status: 401 }
       );
     }
 
-    if (!body.steamId || typeof body.steamId !== "string") {
+    // [3.1] Validate steamId format (17-digit number)
+    if (!/^\d{17}$/.test(steamId)) {
       return NextResponse.json(
-        { success: false, error: "steamId is required" },
+        { success: false, error: "Invalid Steam ID format" },
         { status: 400 }
       );
     }
 
     // Verify Steam profile
-    const verification = await verifySteam(body.steamId, apiKey);
+    const verification = await verifySteam(steamId, apiKey);
 
     if (!verification.success) {
       return NextResponse.json(
@@ -75,7 +74,7 @@ export async function POST(
       );
     }
 
-    const pubkeyHash = hashPubkey(body.steamId);
+    const pubkeyHash = hashPubkey(steamId);
     const salt = generateRandomSalt();
     const credentialTypeFelt = stringToFelt("steam_gamer");
     const verificationHashFelt = hashToFelt(verification.verificationProof.dataHash);
@@ -95,7 +94,8 @@ export async function POST(
 
     await provider.waitForTransaction(tx.transaction_hash);
 
-    return NextResponse.json({
+    // Clear the cookie after successful issuance
+    const response = NextResponse.json({
       success: true,
       credentialId: `${pubkeyHash.slice(0, 16)}`,
       transactionHash: tx.transaction_hash,
@@ -113,6 +113,9 @@ export async function POST(
       },
       commitment,
     });
+
+    response.cookies.delete("steam_verified_id");
+    return response;
   } catch (error) {
     console.error("[/api/credential/steam] Error:", error);
     const errorMessage = getErrorMessage(error);

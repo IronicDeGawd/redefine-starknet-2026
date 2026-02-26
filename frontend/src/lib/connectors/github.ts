@@ -182,8 +182,9 @@ export async function getProfile(accessToken: string): Promise<GitHubProfile> {
       contributions = graphqlData.data?.viewer?.contributionsCollection?.contributionCalendar?.totalContributions || 0;
     }
   } catch {
-    // GraphQL might not be available if scope is limited, fall back to repo count * estimate
-    contributions = user.public_repos * 10;
+    // [4.4 FIX] Don't fabricate contribution count — set to 0 with warning
+    console.warn("[GitHub] GraphQL unavailable — contributions set to 0");
+    contributions = 0;
   }
 
   const accountAge = Math.floor(
@@ -218,17 +219,30 @@ export async function getPublicProfile(username: string): Promise<GitHubProfile>
 
   const user = await userRes.json();
 
-  // Get stars from public repos
+  // [3.3 FIX] Paginate star fetch like getProfile — up to 5 pages
   let totalStars = 0;
-  const reposRes = await fetch(
-    `https://api.github.com/users/${username}/repos?per_page=100&sort=stars`,
-    { headers: { "Accept": "application/vnd.github.v3+json" } }
-  );
+  let page = 1;
+  let hasMore = true;
 
-  if (reposRes.ok) {
+  while (hasMore && page <= 5) {
+    const reposRes = await fetch(
+      `https://api.github.com/users/${username}/repos?per_page=100&page=${page}&sort=stars`,
+      {
+        headers: { "Accept": "application/vnd.github.v3+json" },
+        signal: AbortSignal.timeout(10000),
+      }
+    );
+
+    if (!reposRes.ok) break;
+
     const repos = await reposRes.json();
-    for (const repo of repos) {
-      totalStars += repo.stargazers_count || 0;
+    if (repos.length === 0) {
+      hasMore = false;
+    } else {
+      for (const repo of repos) {
+        totalStars += repo.stargazers_count || 0;
+      }
+      page++;
     }
   }
 
