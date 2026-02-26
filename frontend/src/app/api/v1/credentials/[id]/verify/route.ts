@@ -53,7 +53,7 @@ export async function POST(
     return NextResponse.json(body, { status });
   }
 
-  const keyInfo = validateApiKey(apiKey);
+  const keyInfo = await validateApiKey(apiKey);
   if (!keyInfo) {
     const { body, status } = createErrorResponse("UNAUTHORIZED");
     return NextResponse.json(body, { status });
