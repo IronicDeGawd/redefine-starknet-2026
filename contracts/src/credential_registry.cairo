@@ -1,4 +1,5 @@
 /// CredentialRegistry - Main contract for ZKCred credential management
+/// Supports 7 credential types with cryptographic commitment binding
 
 #[starknet::contract]
 pub mod CredentialRegistry {
@@ -30,6 +31,7 @@ pub mod CredentialRegistry {
     pub enum Event {
         CredentialIssued: CredentialIssued,
         CredentialRevoked: CredentialRevoked,
+        CommitmentVerified: CommitmentVerified,
         OwnershipTransferred: OwnershipTransferred,
         Paused: Paused,
         Unpaused: Unpaused,
@@ -44,6 +46,7 @@ pub mod CredentialRegistry {
         pub timestamp: u64,
         pub verification_hash: felt252,
         pub oracle_provider: felt252,
+        pub commitment: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -51,6 +54,13 @@ pub mod CredentialRegistry {
         #[key]
         pub credential_id: felt252,
         pub timestamp: u64,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    pub struct CommitmentVerified {
+        #[key]
+        pub credential_id: felt252,
+        pub verified: bool,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -92,6 +102,18 @@ pub mod CredentialRegistry {
         self.total_issued.write(0);
     }
 
+    // ============ Internal: Credential Type Validation ============
+
+    fn is_valid_credential_type(credential_type: felt252) -> bool {
+        credential_type == 'btc_tier'
+            || credential_type == 'wallet_age'
+            || credential_type == 'github_dev'
+            || credential_type == 'steam_gamer'
+            || credential_type == 'leetcode_coder'
+            || credential_type == 'eth_holder'
+            || credential_type == 'strava_athlete'
+    }
+
     // ============ External Functions ============
 
     #[abi(embed_v0)]
@@ -104,13 +126,11 @@ pub mod CredentialRegistry {
             salt: felt252,
             verification_hash: felt252,
             oracle_provider: felt252,
+            commitment: felt252,
         ) -> felt252 {
             assert(!self.paused.read(), Errors::PAUSED);
             assert(tier <= 3, Errors::INVALID_TIER);
-            assert(
-                credential_type == 'btc_tier' || credential_type == 'wallet_age',
-                Errors::INVALID_TYPE,
-            );
+            assert(is_valid_credential_type(credential_type), Errors::INVALID_TYPE);
 
             let type_key = poseidon_hash_span(array![pubkey_hash, credential_type].span());
             assert(!self.issued_pubkeys.read(type_key), Errors::ALREADY_ISSUED);
@@ -128,6 +148,7 @@ pub mod CredentialRegistry {
                 revoked: false,
                 verification_hash,
                 oracle_provider,
+                commitment,
             };
 
             self.credentials.write(credential_id, credential);
@@ -138,14 +159,42 @@ pub mod CredentialRegistry {
             self.total_issued.write(current_total + 1);
 
             self.emit(CredentialIssued {
-                credential_id, credential_type, tier, timestamp, verification_hash, oracle_provider,
+                credential_id,
+                credential_type,
+                tier,
+                timestamp,
+                verification_hash,
+                oracle_provider,
+                commitment,
             });
 
             credential_id
         }
 
+        fn verify_commitment(
+            self: @ContractState,
+            credential_id: felt252,
+            pubkey_hash: felt252,
+            credential_type: felt252,
+            tier: u8,
+            verification_hash: felt252,
+            salt: felt252,
+        ) -> bool {
+            let credential = self.credentials.read(credential_id);
+            if credential.pubkey_hash == 0 {
+                return false;
+            }
+
+            // Recompute the commitment from the provided preimage
+            let recomputed = poseidon_hash_span(
+                array![pubkey_hash, credential_type, tier.into(), verification_hash, salt].span(),
+            );
+
+            // Compare with stored commitment
+            recomputed == credential.commitment
+        }
+
         fn revoke_credential(ref self: ContractState, credential_id: felt252) {
-            // Only owner can revoke credentials
             self._only_owner();
             assert(!self.paused.read(), Errors::PAUSED);
 

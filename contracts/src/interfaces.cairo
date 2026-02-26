@@ -3,37 +3,30 @@ use starknet::ContractAddress;
 /// Credential data stored on-chain
 #[derive(Drop, Copy, Serde, starknet::Store, PartialEq)]
 pub struct Credential {
-    /// Poseidon hash of the BTC public key (privacy: don't store raw pubkey)
+    /// Poseidon hash of the user's public key / identifier (privacy: don't store raw data)
     pub pubkey_hash: felt252,
-    /// Type identifier: 'btc_tier' or 'wallet_age'
+    /// Type identifier: 'btc_tier', 'wallet_age', 'github_dev', 'steam_gamer',
+    /// 'leetcode_coder', 'eth_holder', 'strava_athlete'
     pub credential_type: felt252,
-    /// Tier level: 0-3 (Shrimp/Crab/Fish/Whale for btc_tier, Newbie/Hodler/Veteran/OG for wallet_age)
+    /// Tier level: 0-3
     pub tier: u8,
     /// Unix timestamp when credential was issued
     pub issued_at: u64,
     /// Whether the credential has been revoked
     pub revoked: bool,
-    /// SHA-256 hash of the oracle verification data (balance or age proof)
+    /// SHA-256 hash of the oracle/API verification data
     pub verification_hash: felt252,
-    /// Identifier of the oracle provider used (e.g., 'mempool')
+    /// Identifier of the oracle/API provider used (e.g., 'mempool', 'github', 'leetcode')
     pub oracle_provider: felt252,
+    /// Poseidon commitment: H(pubkey_hash, credential_type, tier, verification_hash, salt)
+    /// Cryptographically binds the credential data — tamper-evident
+    pub commitment: felt252,
 }
 
 /// Interface for the CredentialRegistry contract
 #[starknet::interface]
 pub trait ICredentialRegistry<TContractState> {
-    /// Issue a new credential
-    ///
-    /// # Arguments
-    /// * `pubkey_hash` - Poseidon hash of the BTC public key
-    /// * `credential_type` - Type identifier (e.g., 'btc_tier')
-    /// * `tier` - Tier level (0-3)
-    /// * `salt` - Random salt for credential ID generation
-    /// * `verification_hash` - SHA-256 hash of oracle verification data
-    /// * `oracle_provider` - Identifier of the oracle used (e.g., 'mempool')
-    ///
-    /// # Returns
-    /// * `felt252` - The generated credential ID
+    /// Issue a new credential with cryptographic commitment
     fn issue_credential(
         ref self: TContractState,
         pubkey_hash: felt252,
@@ -42,41 +35,31 @@ pub trait ICredentialRegistry<TContractState> {
         salt: felt252,
         verification_hash: felt252,
         oracle_provider: felt252,
+        commitment: felt252,
     ) -> felt252;
 
+    /// Verify a commitment matches the stored credential data
+    /// Recomputes Poseidon(pubkey_hash, credential_type, tier, verification_hash, salt)
+    fn verify_commitment(
+        self: @TContractState,
+        credential_id: felt252,
+        pubkey_hash: felt252,
+        credential_type: felt252,
+        tier: u8,
+        verification_hash: felt252,
+        salt: felt252,
+    ) -> bool;
+
     /// Revoke an existing credential
-    ///
-    /// # Arguments
-    /// * `credential_id` - The credential to revoke
     fn revoke_credential(ref self: TContractState, credential_id: felt252);
 
     /// Get credential details by ID
-    ///
-    /// # Arguments
-    /// * `credential_id` - The credential ID to look up
-    ///
-    /// # Returns
-    /// * `Credential` - The credential data (pubkey_hash=0 if not found)
     fn get_credential(self: @TContractState, credential_id: felt252) -> Credential;
 
     /// Check if a pubkey hash already has a credential of given type
-    ///
-    /// # Arguments
-    /// * `pubkey_hash` - The pubkey hash to check
-    /// * `credential_type` - The credential type to check
-    ///
-    /// # Returns
-    /// * `bool` - True if already issued
     fn is_issued(self: @TContractState, pubkey_hash: felt252, credential_type: felt252) -> bool;
 
     /// Verify that a credential meets a minimum tier
-    ///
-    /// # Arguments
-    /// * `credential_id` - The credential to verify
-    /// * `min_tier` - Minimum tier required
-    ///
-    /// # Returns
-    /// * `bool` - True if credential exists, is active, and meets tier
     fn verify_tier(self: @TContractState, credential_id: felt252, min_tier: u8) -> bool;
 
     /// Get the contract owner address
@@ -92,36 +75,44 @@ pub trait ICredentialRegistry<TContractState> {
 /// Admin interface for the CredentialRegistry contract
 #[starknet::interface]
 pub trait ICredentialRegistryAdmin<TContractState> {
-    /// Pause the contract (owner only)
     fn pause(ref self: TContractState);
-
-    /// Unpause the contract (owner only)
     fn unpause(ref self: TContractState);
-
-    /// Transfer ownership to a new address (owner only)
     fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
 }
 
 /// Interface for the CredentialVerifier helper contract
 #[starknet::interface]
 pub trait ICredentialVerifier<TContractState> {
-    /// Check if credential is Whale tier (100+ BTC)
     fn is_whale(self: @TContractState, credential_id: felt252) -> bool;
-
-    /// Check if credential is Fish tier or above (10+ BTC)
     fn is_fish_or_above(self: @TContractState, credential_id: felt252) -> bool;
-
-    /// Check if credential is Crab tier or above (1+ BTC)
     fn is_crab_or_above(self: @TContractState, credential_id: felt252) -> bool;
-
-    /// Check if credential exists and is active (any tier)
     fn is_holder(self: @TContractState, credential_id: felt252) -> bool;
-
-    /// Get the tier of a credential
     fn get_tier(self: @TContractState, credential_id: felt252) -> u8;
-
-    /// Batch verify multiple credentials against a minimum tier
     fn batch_verify(
         self: @TContractState, credential_ids: Array<felt252>, min_tier: u8,
     ) -> Array<bool>;
+}
+
+/// Interface for the Merkle Tree Accumulator
+#[starknet::interface]
+pub trait ICredentialMerkle<TContractState> {
+    /// Insert a credential commitment as a leaf, returns the leaf index
+    fn insert_leaf(ref self: TContractState, commitment: felt252) -> u32;
+
+    /// Get the current Merkle root
+    fn get_root(self: @TContractState) -> felt252;
+
+    /// Verify a Merkle inclusion proof on-chain
+    fn verify_proof(
+        self: @TContractState,
+        leaf: felt252,
+        proof: Array<felt252>,
+        index: u32,
+    ) -> bool;
+
+    /// Get total leaves inserted
+    fn get_leaf_count(self: @TContractState) -> u32;
+
+    /// Get the contract owner address
+    fn get_owner(self: @TContractState) -> ContractAddress;
 }
