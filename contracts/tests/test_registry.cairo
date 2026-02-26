@@ -31,7 +31,7 @@ fn test_issue_credential() {
     let tier: u8 = 3; // Whale
     let salt: felt252 = 0xabc;
 
-    let credential_id = registry.issue_credential(pubkey_hash, credential_type, tier, salt);
+    let credential_id = registry.issue_credential(pubkey_hash, credential_type, tier, salt, 0, 0);
 
     // Verify credential was created
     let credential = registry.get_credential(credential_id);
@@ -47,7 +47,7 @@ fn test_verify_tier() {
 
     let credential_id = registry
         .issue_credential(
-            0x123, 'btc_tier', 2, 0xabc, // Fish tier
+            0x123, 'btc_tier', 2, 0xabc, 0, 0, // Fish tier
         );
 
     // Should pass for tier 0, 1, 2
@@ -70,7 +70,7 @@ fn test_is_issued() {
     assert(!registry.is_issued(pubkey_hash, credential_type), 'Should not be issued');
 
     // Issue credential
-    registry.issue_credential(pubkey_hash, credential_type, 2, 0xabc);
+    registry.issue_credential(pubkey_hash, credential_type, 2, 0xabc, 0, 0);
 
     // Should be issued now
     assert(registry.is_issued(pubkey_hash, credential_type), 'Should be issued');
@@ -85,10 +85,10 @@ fn test_double_issuance_fails() {
     let credential_type: felt252 = 'btc_tier';
 
     // First issuance should succeed
-    registry.issue_credential(pubkey_hash, credential_type, 2, 0xabc);
+    registry.issue_credential(pubkey_hash, credential_type, 2, 0xabc, 0, 0);
 
     // Second issuance should fail
-    registry.issue_credential(pubkey_hash, credential_type, 3, 0xdef);
+    registry.issue_credential(pubkey_hash, credential_type, 3, 0xdef, 0, 0);
 }
 
 #[test]
@@ -98,8 +98,8 @@ fn test_different_credential_types() {
     let pubkey_hash: felt252 = 0x123;
 
     // Can issue both types for same pubkey
-    let cred1 = registry.issue_credential(pubkey_hash, 'btc_tier', 2, 0xabc);
-    let cred2 = registry.issue_credential(pubkey_hash, 'wallet_age', 1, 0xdef);
+    let cred1 = registry.issue_credential(pubkey_hash, 'btc_tier', 2, 0xabc, 0, 0);
+    let cred2 = registry.issue_credential(pubkey_hash, 'wallet_age', 1, 0xdef, 0, 0);
 
     assert(cred1 != cred2, 'Should have different IDs');
 
@@ -114,7 +114,7 @@ fn test_different_credential_types() {
 fn test_revoke_credential() {
     let (contract_address, registry) = deploy_registry();
 
-    let credential_id = registry.issue_credential(0x123, 'btc_tier', 3, 0xabc);
+    let credential_id = registry.issue_credential(0x123, 'btc_tier', 3, 0xabc, 0, 0);
 
     // Verify active
     assert(registry.verify_tier(credential_id, 3), 'Should be valid');
@@ -148,7 +148,7 @@ fn test_revoke_nonexistent_fails() {
 fn test_double_revoke_fails() {
     let (contract_address, registry) = deploy_registry();
 
-    let credential_id = registry.issue_credential(0x123, 'btc_tier', 3, 0xabc);
+    let credential_id = registry.issue_credential(0x123, 'btc_tier', 3, 0xabc, 0, 0);
 
     // Must be owner to revoke
     start_cheat_caller_address(contract_address, OWNER());
@@ -166,7 +166,7 @@ fn test_invalid_tier_fails() {
     let (_, registry) = deploy_registry();
 
     // Tier 4 is invalid
-    registry.issue_credential(0x123, 'btc_tier', 4, 0xabc);
+    registry.issue_credential(0x123, 'btc_tier', 4, 0xabc, 0, 0);
 }
 
 #[test]
@@ -175,7 +175,7 @@ fn test_invalid_type_fails() {
     let (_, registry) = deploy_registry();
 
     // 'invalid' is not a valid type
-    registry.issue_credential(0x123, 'invalid', 2, 0xabc);
+    registry.issue_credential(0x123, 'invalid', 2, 0xabc, 0, 0);
 }
 
 #[test]
@@ -184,13 +184,13 @@ fn test_total_issued_counter() {
 
     assert(registry.get_total_issued() == 0, 'Should start at 0');
 
-    registry.issue_credential(0x111, 'btc_tier', 1, 0xaaa);
+    registry.issue_credential(0x111, 'btc_tier', 1, 0xaaa, 0, 0);
     assert(registry.get_total_issued() == 1, 'Should be 1');
 
-    registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb);
+    registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb, 0, 0);
     assert(registry.get_total_issued() == 2, 'Should be 2');
 
-    registry.issue_credential(0x333, 'btc_tier', 3, 0xccc);
+    registry.issue_credential(0x333, 'btc_tier', 3, 0xccc, 0, 0);
     assert(registry.get_total_issued() == 3, 'Should be 3');
 }
 

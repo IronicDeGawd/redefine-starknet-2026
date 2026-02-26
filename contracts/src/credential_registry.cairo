@@ -42,6 +42,8 @@ pub mod CredentialRegistry {
         pub credential_type: felt252,
         pub tier: u8,
         pub timestamp: u64,
+        pub verification_hash: felt252,
+        pub oracle_provider: felt252,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -100,6 +102,8 @@ pub mod CredentialRegistry {
             credential_type: felt252,
             tier: u8,
             salt: felt252,
+            verification_hash: felt252,
+            oracle_provider: felt252,
         ) -> felt252 {
             assert(!self.paused.read(), Errors::PAUSED);
             assert(tier <= 3, Errors::INVALID_TIER);
@@ -122,6 +126,8 @@ pub mod CredentialRegistry {
                 tier,
                 issued_at: timestamp,
                 revoked: false,
+                verification_hash,
+                oracle_provider,
             };
 
             self.credentials.write(credential_id, credential);
@@ -131,7 +137,9 @@ pub mod CredentialRegistry {
             let current_total = self.total_issued.read();
             self.total_issued.write(current_total + 1);
 
-            self.emit(CredentialIssued { credential_id, credential_type, tier, timestamp });
+            self.emit(CredentialIssued {
+                credential_id, credential_type, tier, timestamp, verification_hash, oracle_provider,
+            });
 
             credential_id
         }

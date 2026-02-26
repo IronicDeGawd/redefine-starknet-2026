@@ -7,12 +7,16 @@ pub struct Credential {
     pub pubkey_hash: felt252,
     /// Type identifier: 'btc_tier' or 'wallet_age'
     pub credential_type: felt252,
-    /// Tier level: 0=Shrimp, 1=Crab, 2=Fish, 3=Whale
+    /// Tier level: 0-3 (Shrimp/Crab/Fish/Whale for btc_tier, Newbie/Hodler/Veteran/OG for wallet_age)
     pub tier: u8,
     /// Unix timestamp when credential was issued
     pub issued_at: u64,
     /// Whether the credential has been revoked
     pub revoked: bool,
+    /// SHA-256 hash of the oracle verification data (balance or age proof)
+    pub verification_hash: felt252,
+    /// Identifier of the oracle provider used (e.g., 'mempool')
+    pub oracle_provider: felt252,
 }
 
 /// Interface for the CredentialRegistry contract
@@ -25,6 +29,8 @@ pub trait ICredentialRegistry<TContractState> {
     /// * `credential_type` - Type identifier (e.g., 'btc_tier')
     /// * `tier` - Tier level (0-3)
     /// * `salt` - Random salt for credential ID generation
+    /// * `verification_hash` - SHA-256 hash of oracle verification data
+    /// * `oracle_provider` - Identifier of the oracle used (e.g., 'mempool')
     ///
     /// # Returns
     /// * `felt252` - The generated credential ID
@@ -34,6 +40,8 @@ pub trait ICredentialRegistry<TContractState> {
         credential_type: felt252,
         tier: u8,
         salt: felt252,
+        verification_hash: felt252,
+        oracle_provider: felt252,
     ) -> felt252;
 
     /// Revoke an existing credential

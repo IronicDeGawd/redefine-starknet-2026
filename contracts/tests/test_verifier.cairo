@@ -33,10 +33,10 @@ fn test_is_whale() {
     let (_, registry, verifier) = deploy_registry_and_verifier();
 
     // Issue a Whale credential (tier 3)
-    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
+    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa, 0, 0);
 
     // Issue a Fish credential (tier 2)
-    let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb);
+    let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb, 0, 0);
 
     assert(verifier.is_whale(whale_id), 'Whale should be whale');
     assert(!verifier.is_whale(fish_id), 'Fish should not be whale');
@@ -46,9 +46,9 @@ fn test_is_whale() {
 fn test_is_fish_or_above() {
     let (_, registry, verifier) = deploy_registry_and_verifier();
 
-    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
-    let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb);
-    let crab_id = registry.issue_credential(0x333, 'btc_tier', 1, 0xccc);
+    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa, 0, 0);
+    let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb, 0, 0);
+    let crab_id = registry.issue_credential(0x333, 'btc_tier', 1, 0xccc, 0, 0);
 
     assert(verifier.is_fish_or_above(whale_id), 'Whale is fish+');
     assert(verifier.is_fish_or_above(fish_id), 'Fish is fish+');
@@ -59,9 +59,9 @@ fn test_is_fish_or_above() {
 fn test_is_crab_or_above() {
     let (_, registry, verifier) = deploy_registry_and_verifier();
 
-    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
-    let crab_id = registry.issue_credential(0x222, 'btc_tier', 1, 0xbbb);
-    let shrimp_id = registry.issue_credential(0x333, 'btc_tier', 0, 0xccc);
+    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa, 0, 0);
+    let crab_id = registry.issue_credential(0x222, 'btc_tier', 1, 0xbbb, 0, 0);
+    let shrimp_id = registry.issue_credential(0x333, 'btc_tier', 0, 0xccc, 0, 0);
 
     assert(verifier.is_crab_or_above(whale_id), 'Whale is crab+');
     assert(verifier.is_crab_or_above(crab_id), 'Crab is crab+');
@@ -72,7 +72,7 @@ fn test_is_crab_or_above() {
 fn test_is_holder() {
     let (_, registry, verifier) = deploy_registry_and_verifier();
 
-    let shrimp_id = registry.issue_credential(0x111, 'btc_tier', 0, 0xaaa);
+    let shrimp_id = registry.issue_credential(0x111, 'btc_tier', 0, 0xaaa, 0, 0);
 
     assert(verifier.is_holder(shrimp_id), 'Shrimp is holder');
     assert(!verifier.is_holder(0x999), 'Nonexistent is not holder');
@@ -82,10 +82,10 @@ fn test_is_holder() {
 fn test_get_tier() {
     let (_, registry, verifier) = deploy_registry_and_verifier();
 
-    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
-    let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb);
-    let crab_id = registry.issue_credential(0x333, 'btc_tier', 1, 0xccc);
-    let shrimp_id = registry.issue_credential(0x444, 'btc_tier', 0, 0xddd);
+    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa, 0, 0);
+    let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb, 0, 0);
+    let crab_id = registry.issue_credential(0x333, 'btc_tier', 1, 0xccc, 0, 0);
+    let shrimp_id = registry.issue_credential(0x444, 'btc_tier', 0, 0xddd, 0, 0);
 
     assert(verifier.get_tier(whale_id) == 3, 'Whale tier');
     assert(verifier.get_tier(fish_id) == 2, 'Fish tier');
@@ -105,7 +105,7 @@ fn test_get_tier_nonexistent() {
 fn test_get_tier_revoked() {
     let (registry_address, registry, verifier) = deploy_registry_and_verifier();
 
-    let credential_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
+    let credential_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa, 0, 0);
     assert(verifier.get_tier(credential_id) == 3, 'Should be 3');
 
     // Revoke credential (must be called by owner)
@@ -121,10 +121,10 @@ fn test_get_tier_revoked() {
 fn test_batch_verify() {
     let (_, registry, verifier) = deploy_registry_and_verifier();
 
-    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
-    let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb);
-    let crab_id = registry.issue_credential(0x333, 'btc_tier', 1, 0xccc);
-    let shrimp_id = registry.issue_credential(0x444, 'btc_tier', 0, 0xddd);
+    let whale_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa, 0, 0);
+    let fish_id = registry.issue_credential(0x222, 'btc_tier', 2, 0xbbb, 0, 0);
+    let crab_id = registry.issue_credential(0x333, 'btc_tier', 1, 0xccc, 0, 0);
+    let shrimp_id = registry.issue_credential(0x444, 'btc_tier', 0, 0xddd, 0, 0);
 
     // Verify all against tier 1 (Crab)
     let ids = array![whale_id, fish_id, crab_id, shrimp_id];
@@ -150,7 +150,7 @@ fn test_batch_verify_empty() {
 fn test_revoked_fails_verification() {
     let (registry_address, registry, verifier) = deploy_registry_and_verifier();
 
-    let credential_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa);
+    let credential_id = registry.issue_credential(0x111, 'btc_tier', 3, 0xaaa, 0, 0);
 
     // Should pass verification
     assert(verifier.is_whale(credential_id), 'Should be whale');
