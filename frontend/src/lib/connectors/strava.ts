@@ -193,4 +193,4 @@ export async function verifyStrava(
   }
 }
 
-export { TIER_NAMES, TIER_EMOJIS };
+export { TIER_NAMES };

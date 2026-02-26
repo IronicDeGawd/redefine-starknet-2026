@@ -26,5 +26,6 @@ export {
   Errors,
   getErrorMessage,
   isStarknetError,
+  isDuplicateError,
   parseStarknetError,
 } from "./errors";

@@ -18,6 +18,7 @@ import {
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
+  isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
 import { verifyStrava } from "@/lib/connectors/strava";
@@ -117,7 +118,7 @@ export async function POST(
     console.error("[/api/credential/strava] Error:", error);
     const errorMessage = getErrorMessage(error);
 
-    if (errorMessage.toLowerCase().includes("already issued")) {
+    if (isDuplicateError(error)) {
       return NextResponse.json(
         { success: false, error: "A Strava credential has already been issued for this athlete" },
         { status: 409 }

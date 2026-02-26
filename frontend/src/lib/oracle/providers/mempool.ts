@@ -44,7 +44,8 @@ export class MempoolProvider implements OracleProvider {
       confirmedBalance,
       unconfirmedBalance,
       totalBalance,
-      btcBalance: totalBalance / SATS_PER_BTC,
+      // [4.1 FIX] Use CONFIRMED balance for tier — unconfirmed can be inflated via double-spend
+      btcBalance: confirmedBalance / SATS_PER_BTC,
     };
   }
 

@@ -16,6 +16,7 @@ import {
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
+  isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
 import { verifyEthBalance } from "@/lib/connectors/ethereum";
@@ -167,7 +168,7 @@ export async function POST(
     console.error("[/api/credential/ethereum] Error:", error);
     const errorMessage = getErrorMessage(error);
 
-    if (errorMessage.toLowerCase().includes("already issued")) {
+    if (isDuplicateError(error)) {
       return NextResponse.json(
         { success: false, error: "An ETH credential has already been issued for this address" },
         { status: 409 }

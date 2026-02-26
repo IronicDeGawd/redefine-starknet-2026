@@ -18,6 +18,7 @@ import {
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
+  isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
 import { verifySteam } from "@/lib/connectors/steam";
@@ -120,7 +121,7 @@ export async function POST(
     console.error("[/api/credential/steam] Error:", error);
     const errorMessage = getErrorMessage(error);
 
-    if (errorMessage.toLowerCase().includes("already issued")) {
+    if (isDuplicateError(error)) {
       return NextResponse.json(
         { success: false, error: "A Steam credential has already been issued for this account" },
         { status: 409 }

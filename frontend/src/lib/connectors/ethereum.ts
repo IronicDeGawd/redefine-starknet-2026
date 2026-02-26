@@ -172,4 +172,4 @@ export async function verifyEthBalance(
   }
 }
 
-export { TIER_NAMES, TIER_EMOJIS };
+export { TIER_NAMES };

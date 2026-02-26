@@ -177,4 +177,4 @@ export async function verifyLeetCode(username: string): Promise<LeetCodeTierResu
   }
 }
 
-export { TIER_NAMES, TIER_EMOJIS };
+export { TIER_NAMES };

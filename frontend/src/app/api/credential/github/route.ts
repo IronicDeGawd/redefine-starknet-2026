@@ -16,6 +16,7 @@ import {
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
+  isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
 import { verifyGitHub } from "@/lib/connectors/github";
@@ -124,7 +125,7 @@ export async function POST(
     console.error("[/api/credential/github] Error:", error);
     const errorMessage = getErrorMessage(error);
 
-    if (errorMessage.toLowerCase().includes("already issued")) {
+    if (isDuplicateError(error)) {
       return NextResponse.json(
         { success: false, error: "A GitHub credential has already been issued for this user" },
         { status: 409 }

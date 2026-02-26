@@ -16,6 +16,7 @@ import {
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
+  isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
 import { verifyLeetCode } from "@/lib/connectors/leetcode";
@@ -168,7 +169,7 @@ export async function POST(
     console.error("[/api/credential/leetcode] Error:", error);
     const errorMessage = getErrorMessage(error);
 
-    if (errorMessage.toLowerCase().includes("already issued")) {
+    if (isDuplicateError(error)) {
       return NextResponse.json(
         { success: false, error: "A LeetCode credential has already been issued for this username" },
         { status: 409 }

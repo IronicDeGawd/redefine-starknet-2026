@@ -308,4 +308,4 @@ export async function verifyGitHub(
   }
 }
 
-export { TIER_NAMES, TIER_EMOJIS };
+export { TIER_NAMES };

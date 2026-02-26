@@ -89,7 +89,8 @@ export async function verifyBalance(
 
     const queryTimestamp = Date.now();
     const balanceHash = await sha256(
-      `${address}:${balance.totalBalance}:${queryTimestamp}`
+      // [4.1 FIX] Hash confirmedBalance to match tier computation
+      `${address}:${balance.confirmedBalance}:${queryTimestamp}`
     );
 
     return {
