@@ -16,6 +16,11 @@ export function AppShell({ children }: AppShellProps) {
   const btcWallet = useAppStore((state) => state.btcWallet);
   const isConnected = btcWallet.status === "connected";
 
+  // Docs pages are public — no wallet gating
+  if (pathname.startsWith("/docs")) {
+    return <>{children}</>;
+  }
+
   // Show landing page for disconnected users on the home route
   if (!isConnected && pathname === "/") {
     return <LandingPage />;
