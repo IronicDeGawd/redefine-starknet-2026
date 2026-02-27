@@ -96,6 +96,48 @@ pub trait ICredentialVerifier<TContractState> {
     ) -> Array<bool>;
 }
 
+/// Badge data stored per NFT token
+#[derive(Drop, Copy, Serde, starknet::Store, PartialEq)]
+pub struct BadgeData {
+    pub credential_type: felt252,
+    pub tier: u8,
+    pub credential_id: felt252,
+}
+
+/// Interface for the BadgeNFT contract (lean ERC-721)
+#[starknet::interface]
+pub trait IBadgeNFT<TContractState> {
+    /// Mint a badge NFT for a verified credential
+    fn mint(ref self: TContractState, recipient: ContractAddress, credential_id: felt252) -> u256;
+
+    /// Get the owner of a token
+    fn owner_of(self: @TContractState, token_id: u256) -> ContractAddress;
+
+    /// Get the number of tokens owned by an address
+    fn balance_of(self: @TContractState, owner: ContractAddress) -> u256;
+
+    /// Get badge data (credential_type, tier) for a token
+    fn get_badge_data(self: @TContractState, token_id: u256) -> (felt252, u8);
+
+    /// Check if a credential already has a minted badge
+    fn has_badge(self: @TContractState, credential_id: felt252) -> bool;
+
+    /// Get total supply of minted badges
+    fn get_total_supply(self: @TContractState) -> u256;
+
+    /// Get the base URI for metadata
+    fn get_base_uri(self: @TContractState) -> ByteArray;
+
+    /// Set the base URI (owner only)
+    fn set_base_uri(ref self: TContractState, new_base_uri: ByteArray);
+
+    /// Get the contract owner
+    fn get_owner(self: @TContractState) -> ContractAddress;
+
+    /// Transfer ownership (owner only)
+    fn transfer_ownership(ref self: TContractState, new_owner: ContractAddress);
+}
+
 /// Interface for the Merkle Tree Accumulator
 #[starknet::interface]
 pub trait ICredentialMerkle<TContractState> {
