@@ -2,7 +2,14 @@
  * Credential types for ZKCred
  */
 
-export type CredentialType = "btc_tier" | "wallet_age";
+export type CredentialType =
+  | "btc_tier"
+  | "wallet_age"
+  | "eth_holder"
+  | "github_dev"
+  | "leetcode_coder"
+  | "steam_gamer"
+  | "strava_athlete";
 
 export type Tier = 0 | 1 | 2 | 3;
 
@@ -27,6 +34,7 @@ export interface Credential {
   tier: Tier;
   issuedAt: string;
   revoked: boolean;
+  nftTokenId?: string;
 }
 
 export interface CredentialOnChain {
