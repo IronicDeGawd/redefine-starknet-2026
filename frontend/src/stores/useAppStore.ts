@@ -65,6 +65,7 @@ interface AppState {
   // Actions - Credentials
   addCredential: (credential: Credential) => void;
   removeCredential: (id: string) => void;
+  updateCredential: (id: string, updates: Partial<Credential>) => void;
   setPendingCredential: (pending: PendingCredential | null) => void;
 }
 
@@ -146,6 +147,13 @@ export const useAppStore = create<AppState>()(
       removeCredential: (id) =>
         set((state) => ({
           credentials: state.credentials.filter((c) => c.id !== id),
+        })),
+
+      updateCredential: (id, updates) =>
+        set((state) => ({
+          credentials: state.credentials.map((c) =>
+            c.id === id ? { ...c, ...updates } : c
+          ),
         })),
 
       setPendingCredential: (pending) =>
