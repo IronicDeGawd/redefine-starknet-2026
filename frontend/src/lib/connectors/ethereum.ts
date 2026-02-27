@@ -29,13 +29,6 @@ const TIER_NAMES: Record<number, string> = {
   3: "Whale",
 };
 
-const TIER_EMOJIS: Record<number, string> = {
-  0: "🫧",
-  1: "💎",
-  2: "🔷",
-  3: "🐋",
-};
-
 // ETH tier boundaries (in ETH)
 const TIER_BOUNDARIES = {
   HOLDER: 0.1,   // 0.1 ETH

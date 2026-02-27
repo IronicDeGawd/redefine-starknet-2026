@@ -33,13 +33,6 @@ const TIER_NAMES: Record<number, string> = {
   3: "Ultra",
 };
 
-const TIER_EMOJIS: Record<number, string> = {
-  0: "🏃",
-  1: "💪",
-  2: "🥇",
-  3: "🏔️",
-};
-
 /**
  * Calculate athlete tier from total distance
  * Tier 0: <50km

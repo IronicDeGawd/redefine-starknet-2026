@@ -34,13 +34,6 @@ const TIER_NAMES: Record<number, string> = {
   3: "Guardian",
 };
 
-const TIER_EMOJIS: Record<number, string> = {
-  0: "🌱",
-  1: "🧩",
-  2: "🧠",
-  3: "👑",
-};
-
 /**
  * Calculate coder tier from LeetCode stats
  * Tier 0: <50 problems

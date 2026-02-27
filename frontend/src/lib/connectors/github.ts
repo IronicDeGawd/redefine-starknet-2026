@@ -32,13 +32,6 @@ const TIER_NAMES: Record<number, string> = {
   3: "Elite",
 };
 
-const TIER_EMOJIS: Record<number, string> = {
-  0: "🌱",
-  1: "🔨",
-  2: "⭐",
-  3: "🏆",
-};
-
 /**
  * Calculate developer tier from GitHub stats
  * Tier 0: <5 repos, <50 contributions
@@ -116,6 +109,7 @@ export async function getProfile(accessToken: string): Promise<GitHubProfile> {
       "Authorization": `Bearer ${accessToken}`,
       "Accept": "application/vnd.github.v3+json",
     },
+    signal: AbortSignal.timeout(10000), // [3.5 FIX]
   });
 
   if (!userRes.ok) {
@@ -137,6 +131,7 @@ export async function getProfile(accessToken: string): Promise<GitHubProfile> {
           "Authorization": `Bearer ${accessToken}`,
           "Accept": "application/vnd.github.v3+json",
         },
+        signal: AbortSignal.timeout(10000), // [3.5 FIX]
       }
     );
 
@@ -162,6 +157,7 @@ export async function getProfile(accessToken: string): Promise<GitHubProfile> {
         "Authorization": `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
+      signal: AbortSignal.timeout(10000), // [3.5 FIX]
       body: JSON.stringify({
         query: `
           query {
@@ -255,7 +251,7 @@ export async function getPublicProfile(username: string): Promise<GitHubProfile>
     publicRepos: user.public_repos || 0,
     totalStars,
     followers: user.followers || 0,
-    contributions: user.public_repos * 10, // Estimate without GraphQL
+    contributions: 0, // [4.4 FIX] No GraphQL in public path — don't fabricate
     accountAge,
   };
 }

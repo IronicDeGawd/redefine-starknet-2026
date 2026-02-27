@@ -31,13 +31,6 @@ const TIER_NAMES: Record<number, string> = {
   3: "Legend",
 };
 
-const TIER_EMOJIS: Record<number, string> = {
-  0: "🎮",
-  1: "🕹️",
-  2: "🎯",
-  3: "👾",
-};
-
 /**
  * Calculate gamer tier from Steam stats
  * Tier 0: <10 games, <100h total
