@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import {
@@ -68,36 +69,32 @@ const CONNECTORS: ConnectorConfig[] = [
         borderColor: "border-purple-500/20",
         credentialType: "github_dev",
         tiers: [
-            { name: "Newbie", emoji: "🌱", description: "<5 repos" },
-            { name: "Builder", emoji: "🔨", description: "5-20 repos" },
-            { name: "Veteran", emoji: "⭐", description: "20-50 repos" },
-            { name: "Elite", emoji: "🏆", description: "50+ repos" },
+            { name: "Seedling", emoji: "🌱", description: "<5 repos" },
+            { name: "Hammer", emoji: "🔨", description: "5-20 repos" },
+            { name: "Star", emoji: "⭐", description: "20-50 repos" },
+            { name: "Trophy", emoji: "🏆", description: "50+ repos" },
         ],
-        inputType: "username",
-        inputPlaceholder: "Enter GitHub username",
-        inputLabel: "GitHub Username",
+        inputType: "oauth",
         apiEndpoint: "/api/credential/github",
         available: true,
     },
     {
-        id: "leetcode",
-        name: "LeetCode",
-        description: "Prove your coding tier from problems solved & contest rating",
+        id: "codeforces",
+        name: "Codeforces",
+        description: "Prove your competitive programming tier from your Codeforces rating",
         icon: Code2,
         color: "text-amber-400",
         bgColor: "bg-amber-500/10",
         borderColor: "border-amber-500/20",
-        credentialType: "leetcode_coder",
+        credentialType: "codeforces_coder",
         tiers: [
-            { name: "Beginner", emoji: "🌱", description: "<50 solved" },
-            { name: "Solver", emoji: "🧩", description: "50-200 solved" },
-            { name: "Expert", emoji: "🧠", description: "200-500 solved" },
-            { name: "Guardian", emoji: "👑", description: "500+ solved" },
+            { name: "Newbie", emoji: "🌱", description: "< 1200 rating" },
+            { name: "Specialist", emoji: "🧩", description: "1200-1599" },
+            { name: "Expert", emoji: "🧠", description: "1600-1999" },
+            { name: "Master", emoji: "👑", description: "2000+" },
         ],
-        inputType: "username",
-        inputPlaceholder: "Enter LeetCode username",
-        inputLabel: "LeetCode Username",
-        apiEndpoint: "/api/credential/leetcode",
+        inputType: "oauth",
+        apiEndpoint: "/api/credential/codeforces",
         available: true,
     },
     {
@@ -115,9 +112,7 @@ const CONNECTORS: ConnectorConfig[] = [
             { name: "Stacker", emoji: "🔷", description: "1-10 ETH" },
             { name: "Whale", emoji: "🐋", description: "10+ ETH" },
         ],
-        inputType: "address",
-        inputPlaceholder: "0x...",
-        inputLabel: "ETH Address",
+        inputType: "wallet",
         apiEndpoint: "/api/credential/ethereum",
         available: true,
     },
@@ -233,6 +228,7 @@ export default function ConnectPage() {
 }
 
 function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
+    const searchParams = useSearchParams();
     const [status, setStatus] = useState<ConnectorStatus>("idle");
     const [input, setInput] = useState("");
     const [result, setResult] = useState<{
@@ -242,8 +238,117 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [expanded, setExpanded] = useState(false);
+    const [ethAddress, setEthAddress] = useState<string | null>(null);
+
+    // Auto-expand after OAuth callback redirect
+    const returnedFromOAuth =
+        (connector.id === "codeforces" && searchParams.get("codeforces_success") === "true") ||
+        (connector.id === "github" && searchParams.get("github_success") === "true");
+    useEffect(() => {
+        if (returnedFromOAuth) setExpanded(true);
+    }, [returnedFromOAuth]);
+
+    const handleEthConnect = async () => {
+        if (typeof window === "undefined" || !window.ethereum) {
+            setError("MetaMask not installed");
+            return;
+        }
+        setStatus("connecting");
+        setError(null);
+        try {
+            const accounts = (await window.ethereum.request({ method: "eth_requestAccounts" })) as string[];
+            if (accounts?.length) {
+                setEthAddress(accounts[0]);
+                setStatus("idle");
+            }
+        } catch (err) {
+            setStatus("error");
+            setError(err instanceof Error ? err.message : "Wallet connection failed");
+        }
+    };
+
+    const handleEthVerify = async () => {
+        if (!ethAddress) return;
+        setStatus("verifying");
+        setError(null);
+        setResult(null);
+        try {
+            const message = `ZKCred: Verify ETH wallet\nAddress: ${ethAddress}\nTimestamp: ${Date.now()}`;
+            const signature = (await window.ethereum!.request({
+                method: "personal_sign",
+                params: [message, ethAddress],
+            })) as string;
+
+            const res = await fetch(connector.apiEndpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ ethAddress, signature, message }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setStatus("success");
+                setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash });
+            } else {
+                setStatus("error");
+                setError(data.error || "Verification failed");
+            }
+        } catch (err) {
+            setStatus("error");
+            setError(err instanceof Error ? err.message : "Signing failed");
+        }
+    };
+
+    const handleOAuthRedirect = (provider: string) => {
+        if (provider === "codeforces") {
+            const clientId = process.env.NEXT_PUBLIC_CODEFORCES_CLIENT_ID;
+            if (!clientId) {
+                setError("Codeforces OIDC not configured");
+                return;
+            }
+            const state = Math.random().toString(36).slice(2);
+            document.cookie = `cf_oauth_state=${state};path=/;max-age=300;samesite=strict`;
+            const redirectUri = `${window.location.origin}/api/auth/codeforces/callback`;
+            window.location.href = `https://codeforces.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid&state=${state}`;
+        } else if (provider === "github") {
+            const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
+            if (!clientId) {
+                setError("GitHub OAuth not configured");
+                return;
+            }
+            const state = Math.random().toString(36).slice(2);
+            document.cookie = `gh_oauth_state=${state};path=/;max-age=300;samesite=strict`;
+            const redirectUri = `${window.location.origin}/api/auth/github/callback`;
+            window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user&state=${state}`;
+        }
+    };
 
     const handleSubmit = async () => {
+        if (connector.inputType === "oauth") {
+            // For OAuth connectors (codeforces, strava), first check if we returned from callback
+            setStatus("verifying");
+            setError(null);
+            setResult(null);
+            try {
+                const res = await fetch(connector.apiEndpoint, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({}),
+                });
+                const data = await res.json();
+                if (data.success) {
+                    setStatus("success");
+                    setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash });
+                } else {
+                    setStatus("error");
+                    setError(data.error || "Verification failed");
+                }
+            } catch (err) {
+                setStatus("error");
+                setError(err instanceof Error ? err.message : "Network error");
+            }
+            return;
+        }
+
         if (!input.trim() && connector.inputType !== "wallet") return;
 
         setStatus("verifying");
@@ -252,10 +357,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
 
         try {
             const body: Record<string, string> = {};
-            if (connector.id === "leetcode") body.username = input.trim();
-            else if (connector.id === "ethereum") body.ethAddress = input.trim();
-            else if (connector.id === "github") body.username = input.trim();
-            else if (connector.id === "steam") body.steamId = input.trim();
+            if (connector.id === "steam") body.steamId = input.trim();
 
             const res = await fetch(connector.apiEndpoint, {
                 method: "POST",
@@ -332,7 +434,8 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             {/* Expanded: Input Form */}
             {expanded && connector.available && status !== "success" && (
                 <div className="mt-4 pt-4 border-t border-[var(--border-light)]" onClick={(e) => e.stopPropagation()}>
-                    {connector.inputType !== "wallet" && connector.inputType !== "oauth" && (
+                    {/* Username/Address input connectors */}
+                    {connector.inputType === "username" && (
                         <>
                             <label className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block">
                                 {connector.inputLabel}
@@ -361,6 +464,96 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                                 </Button>
                             </div>
                         </>
+                    )}
+
+                    {/* ETH Wallet: connect → sign → verify */}
+                    {connector.inputType === "wallet" && connector.id === "ethereum" && (
+                        <div className="space-y-3">
+                            {!ethAddress ? (
+                                <Button
+                                    onClick={handleEthConnect}
+                                    disabled={status === "connecting"}
+                                    className="w-full"
+                                >
+                                    {status === "connecting" ? (
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    ) : (
+                                        <Wallet className="w-4 h-4 mr-2" />
+                                    )}
+                                    Connect MetaMask
+                                </Button>
+                            ) : (
+                                <>
+                                    <div className="text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)] rounded-lg px-3 py-2 font-mono truncate">
+                                        {ethAddress}
+                                    </div>
+                                    <Button
+                                        onClick={handleEthVerify}
+                                        disabled={status === "verifying"}
+                                        className="w-full"
+                                    >
+                                        {status === "verifying" ? (
+                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                        ) : (
+                                            <Shield className="w-4 h-4 mr-2" />
+                                        )}
+                                        Sign & Verify
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* OAuth connectors: redirect to provider */}
+                    {connector.inputType === "oauth" && (
+                        <div className="space-y-3">
+                            {connector.id === "codeforces" && !returnedFromOAuth && (
+                                <>
+                                    <Button
+                                        onClick={() => handleOAuthRedirect("codeforces")}
+                                        disabled={status === "verifying"}
+                                        className="w-full"
+                                    >
+                                        <Code2 className="w-4 h-4 mr-2" />
+                                        Login with Codeforces
+                                    </Button>
+                                    <p className="text-xs text-[var(--text-muted)]">
+                                        Redirects to Codeforces for OIDC authentication
+                                    </p>
+                                </>
+                            )}
+                            {connector.id === "github" && !returnedFromOAuth && (
+                                <>
+                                    <Button
+                                        onClick={() => handleOAuthRedirect("github")}
+                                        disabled={status === "verifying"}
+                                        className="w-full"
+                                    >
+                                        <Github className="w-4 h-4 mr-2" />
+                                        Login with GitHub
+                                    </Button>
+                                    <p className="text-xs text-[var(--text-muted)]">
+                                        Redirects to GitHub for OAuth authentication
+                                    </p>
+                                </>
+                            )}
+                            {/* After returning from OAuth callback, show "Issue Credential" button */}
+                            {returnedFromOAuth && (
+                                <Button
+                                    onClick={handleSubmit}
+                                    disabled={status === "verifying"}
+                                    className="w-full"
+                                    variant="secondary"
+                                >
+                                    {status === "verifying" ? (
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    ) : (
+                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                    )}
+                                    Issue Credential
+                                </Button>
+                            )}
+                        </div>
                     )}
 
                     {error && (
