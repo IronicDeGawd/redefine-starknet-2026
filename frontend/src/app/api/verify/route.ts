@@ -13,7 +13,8 @@ import {
   feltToString,
   getErrorMessage,
 } from "@/lib/utils";
-import { TIER_NAMES } from "@/types/credential";
+import { getTierName } from "@/lib/badges/config";
+import type { Tier } from "@/types/credential";
 import type { VerifyCredentialResponse, ApiError } from "@/types/api";
 
 export const runtime = "nodejs";
@@ -77,7 +78,7 @@ export async function GET(
         id: credentialId,
         type: credentialType,
         tier,
-        tierName: TIER_NAMES[tier as keyof typeof TIER_NAMES] || "Unknown",
+        tierName: getTierName(credentialType, tier as Tier),
         issuedAt: new Date(issuedAt * 1000).toISOString(),
         status: revoked ? "revoked" : "active",
       },

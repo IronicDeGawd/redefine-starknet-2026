@@ -20,7 +20,8 @@ import {
   getRateLimitHeaders,
   createErrorResponse,
 } from "@/lib/api";
-import { TIER_NAMES } from "@/types/credential";
+import { getTierName } from "@/lib/badges/config";
+import type { Tier } from "@/types/credential";
 
 export const runtime = "nodejs";
 
@@ -110,7 +111,7 @@ export async function GET(
       id: credentialId,
       type: credentialType,
       tier,
-      tierName: TIER_NAMES[tier as keyof typeof TIER_NAMES] || "Unknown",
+      tierName: getTierName(credentialType, tier as Tier),
       issuedAt: new Date(issuedAt * 1000).toISOString(),
       revoked,
       status: revoked ? "revoked" : "active",

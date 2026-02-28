@@ -62,16 +62,16 @@ export const CREDENTIAL_CONFIG: Record<CredentialType, ConnectorConfig> = {
     },
     palette: { 0: "#CD7F32", 1: "#9B59B6", 2: "#27AE60", 3: "#F1C40F" },
   },
-  leetcode_coder: {
-    label: "LeetCode Coder",
-    description: "LeetCode coding tier",
+  codeforces_coder: {
+    label: "Codeforces Coder",
+    description: "Codeforces competitive programming tier",
     tiers: {
-      0: { name: "Bracket", image: "/badges/leetcode/bracket.png" },
-      1: { name: "Puzzle", image: "/badges/leetcode/puzzle.png" },
-      2: { name: "Brain", image: "/badges/leetcode/brain.png" },
-      3: { name: "Crown", image: "/badges/leetcode/crown.png" },
+      0: { name: "Newbie", image: "/badges/codeforces/newbie.png" },
+      1: { name: "Specialist", image: "/badges/codeforces/specialist.png" },
+      2: { name: "Expert", image: "/badges/codeforces/expert.png" },
+      3: { name: "Master", image: "/badges/codeforces/master.png" },
     },
-    palette: { 0: "#CD7F32", 1: "#9B59B6", 2: "#27AE60", 3: "#F1C40F" },
+    palette: { 0: "#808080", 1: "#03A89E", 2: "#0000FF", 3: "#FF8C00" },
   },
   steam_gamer: {
     label: "Steam Gamer",
@@ -105,4 +105,10 @@ export function getBadgeInfo(credentialType: CredentialType, tier: Tier): TierIn
 /** Get the display label for a credential type */
 export function getCredentialLabel(credentialType: CredentialType): string {
   return CREDENTIAL_CONFIG[credentialType].label;
+}
+
+/** Get the tier name for a credential type and tier level */
+export function getTierName(credentialType: CredentialType | string, tier: Tier): string {
+  const config = CREDENTIAL_CONFIG[credentialType as CredentialType];
+  return config?.tiers[tier]?.name ?? `Tier ${tier}`;
 }
