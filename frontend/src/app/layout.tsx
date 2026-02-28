@@ -16,24 +16,26 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "ZKCred — Privacy Credentials for Bitcoin",
+  title: "ZKCred — Multi-Platform Privacy Credentials",
   description:
-    "Create privacy-preserving credentials for your Bitcoin holdings on Starknet. Prove your tier without revealing your wallet.",
+    "Create privacy-preserving credentials for Bitcoin, Ethereum, GitHub, Codeforces, Steam, and Strava on Starknet. Prove your reputation without revealing personal data.",
   keywords: [
     "Bitcoin",
+    "Ethereum",
+    "GitHub",
     "Starknet",
     "ZK",
     "Zero Knowledge",
     "Privacy",
     "Credentials",
-    "DeFi",
-    "Crypto",
+    "Reputation",
+    "Multi-credential",
   ],
   authors: [{ name: "ZKCred Team" }],
   openGraph: {
-    title: "ZKCred — Privacy Credentials for Bitcoin",
+    title: "ZKCred — Multi-Platform Privacy Credentials",
     description:
-      "Create privacy-preserving credentials for your Bitcoin holdings on Starknet.",
+      "Create privacy-preserving credentials across 6 platforms on Starknet.",
     type: "website",
   },
 };

@@ -20,11 +20,11 @@ interface TierConfig {
 const TIERS: TierConfig[] = [
   {
     level: 0,
-    name: "Shrimp",
-    title: "Community Hub",
-    emoji: "\uD83E\uDD90",
+    name: "Tier 0",
+    title: "Open Access",
+    emoji: "\uD83C\uDF31",
     description:
-      "Welcome to ZKCred! Access community updates, basic analytics dashboard, and public credential verification tools.",
+      "Welcome to ZKCred! Access community announcements, public API playground, credential verification tools, and basic platform documentation.",
     colorVar: "var(--tier-shrimp)",
     bgVar: "var(--tier-shrimp-bg)",
     borderColor: "#9CA3AF",
@@ -33,11 +33,11 @@ const TIERS: TierConfig[] = [
   },
   {
     level: 1,
-    name: "Crab",
-    title: "Market Insights",
-    emoji: "\uD83E\uDD80",
+    name: "Tier 1",
+    title: "Insider Access",
+    emoji: "\u2B50",
     description:
-      "Real-time market data feeds, weekly trend analysis, top holder movement alerts, and basic API access.",
+      "Early feature previews, detailed API usage stats, batch verification at 100 req/call, and connector-specific credential guides.",
     colorVar: "var(--tier-crab)",
     bgVar: "var(--tier-crab-bg)",
     borderColor: "#F59E0B",
@@ -46,11 +46,11 @@ const TIERS: TierConfig[] = [
   },
   {
     level: 2,
-    name: "Fish",
-    title: "Alpha Channel",
-    emoji: "\uD83D\uDC1F",
+    name: "Tier 2",
+    title: "Builder Access",
+    emoji: "\uD83D\uDC8E",
     description:
-      "Pre-market alpha signals, on-chain intelligence reports, premium API access with higher rate limits, and research reports.",
+      "Webhook integrations for credential events, developer API with elevated rate limits, custom credential type proposals, and priority support.",
     colorVar: "var(--tier-fish)",
     bgVar: "var(--tier-fish-bg)",
     borderColor: "#3B82F6",
@@ -59,11 +59,11 @@ const TIERS: TierConfig[] = [
   },
   {
     level: 3,
-    name: "Whale",
-    title: "Whale Room",
-    emoji: "\uD83D\uDC0B",
+    name: "Tier 3",
+    title: "Elite Access",
+    emoji: "\uD83D\uDC51",
     description:
-      "Governance proposal drafts, exclusive OTC deal access, direct line to protocol team, unlimited API access, and early feature previews.",
+      "Direct protocol team access, governance participation in new connector proposals, unlimited API, white-label credential issuance, and dedicated SLA.",
     colorVar: "var(--tier-whale)",
     bgVar: "var(--tier-whale-bg)",
     borderColor: "#8B5CF6",
@@ -322,7 +322,7 @@ export default function LoungePage() {
                 backgroundClip: "text",
               }}
             >
-              Whale Lounge
+              ZKCred Lounge
             </h1>
             <p
               style={{

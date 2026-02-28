@@ -9,12 +9,7 @@ const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
 const ZKCRED_API_URL = process.env.ZKCRED_API_URL || "http://localhost:3000";
 const ZKCRED_API_KEY = process.env.ZKCRED_API_KEY;
 
-const TIER_ROLES = {
-  0: { name: "Shrimp", emoji: "\u{1F990}", color: 0x9CA3AF },
-  1: { name: "Crab",   emoji: "\u{1F980}", color: 0xF59E0B },
-  2: { name: "Fish",   emoji: "\u{1F41F}", color: 0x3B82F6 },
-  3: { name: "Whale",  emoji: "\u{1F40B}", color: 0x8B5CF6 },
-};
+const TIER_EMOJIS = { 0: "\\u{1F331}", 1: "\\u2B50", 2: "\\u{1F48E}", 3: "\\u{1F451}" };
 
 // --- Verify Command Handler ---
 async function handleVerify(interaction) {
@@ -28,21 +23,22 @@ async function handleVerify(interaction) {
   const data = await res.json();
 
   if (data.valid) {
-    const tier = TIER_ROLES[data.credential.tier];
-    // Assign role based on tier...
+    const { credential } = data;
+    const emoji = TIER_EMOJIS[credential.tier] ?? "\\u2728";
+    // Assign role based on credential type + tier...
     const embed = new EmbedBuilder()
-      .setTitle(\`\${tier.emoji} Credential Verified!\`)
-      .setDescription(\`Welcome to the \${tier.name} tier\`)
-      .setColor(tier.color);
+      .setTitle(\`\${emoji} Credential Verified!\`)
+      .setDescription(\`\${credential.tierName} (Tier \${credential.tier})\`)
+      .setColor(0x5B7FFF);
     await interaction.editReply({ embeds: [embed] });
   }
 }`;
 
 const TIERS = [
-  { name: "Shrimp", emoji: "\u{1F990}", color: "var(--tier-shrimp)", bg: "var(--tier-shrimp-bg)", textColor: "var(--grey-700)" },
-  { name: "Crab", emoji: "\u{1F980}", color: "var(--tier-crab)", bg: "var(--tier-crab-bg)", textColor: "#B45309" },
-  { name: "Fish", emoji: "\u{1F41F}", color: "var(--tier-fish)", bg: "var(--tier-fish-bg)", textColor: "#1D4ED8" },
-  { name: "Whale", emoji: "\u{1F40B}", color: "var(--tier-whale)", bg: "var(--tier-whale-bg)", textColor: "#6D28D9" },
+  { name: "Tier 0", emoji: "\u{1F331}", color: "var(--tier-shrimp)", bg: "var(--tier-shrimp-bg)", textColor: "var(--grey-700)" },
+  { name: "Tier 1", emoji: "\u2B50", color: "var(--tier-crab)", bg: "var(--tier-crab-bg)", textColor: "#B45309" },
+  { name: "Tier 2", emoji: "\u{1F48E}", color: "var(--tier-fish)", bg: "var(--tier-fish-bg)", textColor: "#1D4ED8" },
+  { name: "Tier 3", emoji: "\u{1F451}", color: "var(--tier-whale)", bg: "var(--tier-whale-bg)", textColor: "#6D28D9" },
 ];
 
 const QUICK_START_STEPS = [
@@ -199,7 +195,7 @@ export default function DiscordBotPage() {
                 Discord Bot Integration
               </h1>
               <p className="text-[var(--text-secondary)] mt-1">
-                Gate your Discord server with Bitcoin credentials
+                Gate your Discord server with ZKCred reputation credentials
               </p>
             </div>
           </div>

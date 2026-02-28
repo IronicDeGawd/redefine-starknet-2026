@@ -88,10 +88,10 @@ const DEMO_API_KEY = "zkcred_demo_playground_key";
 const SAMPLE_CREDENTIAL_ID = "0x1234abcd5678ef901234abcd5678ef901234abcd5678ef901234abcd5678ef90";
 const TIER_OPTIONS = [
   { value: "", label: "None (optional)" },
-  { value: "0", label: "0 - Shrimp" },
-  { value: "1", label: "1 - Crab" },
-  { value: "2", label: "2 - Fish" },
-  { value: "3", label: "3 - Whale" },
+  { value: "0", label: "Tier 0 — Entry" },
+  { value: "1", label: "Tier 1 — Intermediate" },
+  { value: "2", label: "Tier 2 — Advanced" },
+  { value: "3", label: "Tier 3 — Elite" },
 ];
 
 /* -------------------------------------------------- */
