@@ -15,12 +15,14 @@ import {
   Code,
   Plug,
   Lock,
+  Fingerprint,
 } from "lucide-react";
 
 const navItems = [
   { href: "/connect", label: "Connect", icon: Plug },
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/credentials", label: "Credentials", icon: BadgeCheck },
+  { href: "/passport", label: "Passport", icon: Fingerprint },
   { href: "/verify", label: "Verify", icon: Shield },
   { href: "/playground", label: "Playground", icon: FlaskConical },
   { href: "/lounge", label: "Lounge", icon: Crown },
