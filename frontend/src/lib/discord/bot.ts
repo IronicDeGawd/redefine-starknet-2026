@@ -25,14 +25,34 @@ const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const ZKCRED_API_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const ZKCRED_API_KEY = process.env.ZKCRED_DISCORD_API_KEY || "";
 
-const TIER_ROLES: Record<number, { name: string; emoji: string; color: number }> = {
-  0: { name: "Shrimp", emoji: "\u{1F990}", color: 0x9ca3af },
-  1: { name: "Crab", emoji: "\u{1F980}", color: 0xf59e0b },
-  2: { name: "Fish", emoji: "\u{1F41F}", color: 0x3b82f6 },
-  3: { name: "Whale", emoji: "\u{1F40B}", color: 0x8b5cf6 },
+/** Per-credential-type config for Discord roles */
+const CREDENTIAL_TIERS: Record<string, { label: string; tiers: Record<number, string>; color: number }> = {
+  btc_tier:         { label: "BTC",        tiers: { 0: "Shrimp", 1: "Crab", 2: "Fish", 3: "Whale" },       color: 0xf7931a },
+  wallet_age:       { label: "Wallet Age", tiers: { 0: "Newbie", 1: "Veteran", 2: "Hodler", 3: "OG" },     color: 0x9ca3af },
+  eth_holder:       { label: "ETH",        tiers: { 0: "Dust", 1: "Shard", 2: "Diamond", 3: "Whale" },     color: 0x627eea },
+  github_dev:       { label: "GitHub Dev", tiers: { 0: "Seedling", 1: "Hammer", 2: "Star", 3: "Trophy" },  color: 0x6e40c9 },
+  codeforces_coder: { label: "Codeforces", tiers: { 0: "Newbie", 1: "Specialist", 2: "Expert", 3: "Master" }, color: 0x1f8dd6 },
+  steam_gamer:      { label: "Steam",      tiers: { 0: "Basic", 1: "Intermediate", 2: "Advanced", 3: "Elite" }, color: 0x1b2838 },
+  strava_athlete:   { label: "Strava",     tiers: { 0: "Sneaker", 1: "Runner", 2: "Mountain", 3: "Peak" }, color: 0xfc4c02 },
 };
 
-const TIER_ROLE_NAMES = Object.values(TIER_ROLES).map((t) => t.name);
+const TIER_EMOJIS: Record<number, string> = {
+  0: "\u{1F331}", // 🌱
+  1: "\u{2B50}",  // ⭐
+  2: "\u{1F48E}", // 💎
+  3: "\u{1F451}", // 👑
+};
+
+function getRoleInfo(credentialType: string, tier: number): { name: string; emoji: string; color: number } {
+  const config = CREDENTIAL_TIERS[credentialType];
+  const tierName = config?.tiers[tier] ?? `Tier ${tier}`;
+  const label = config?.label ?? credentialType;
+  return {
+    name: `${label}: ${tierName}`,
+    emoji: TIER_EMOJIS[tier] ?? "\u{2728}",
+    color: config?.color ?? 0x5b7fff,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Singleton guard — prevent multiple bot instances
@@ -103,20 +123,18 @@ async function handleVerify(interaction: ChatInputCommandInteraction) {
       return;
     }
 
-    // Assign role
-    const tier = TIER_ROLES[data.credential.tier];
-    if (!tier) {
-      await interaction.editReply({ content: "Unknown tier received." });
-      return;
-    }
+    // Get type-aware role info
+    const roleInfo = getRoleInfo(data.credential.type, data.credential.tier);
 
     const member = interaction.guild?.members.cache.get(interaction.user.id) ??
       (await interaction.guild?.members.fetch(interaction.user.id));
 
     if (member && interaction.guild) {
-      // Remove existing tier roles
+      // Remove existing roles for this credential type
+      const config = CREDENTIAL_TIERS[data.credential.type];
+      const typeLabel = config?.label ?? data.credential.type;
       const rolesToRemove = member.roles.cache.filter((r) =>
-        TIER_ROLE_NAMES.includes(r.name)
+        r.name.startsWith(`${typeLabel}: `)
       );
       for (const [, role] of rolesToRemove) {
         await member.roles.remove(role);
@@ -124,12 +142,12 @@ async function handleVerify(interaction: ChatInputCommandInteraction) {
 
       // Find or create the tier role
       let targetRole = interaction.guild.roles.cache.find(
-        (r) => r.name === tier.name
+        (r) => r.name === roleInfo.name
       );
       if (!targetRole) {
         targetRole = await interaction.guild.roles.create({
-          name: tier.name,
-          color: tier.color,
+          name: roleInfo.name,
+          color: roleInfo.color,
           reason: "ZKCred tier role",
         });
       }
@@ -138,14 +156,14 @@ async function handleVerify(interaction: ChatInputCommandInteraction) {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle(`${tier.emoji} Credential Verified!`)
-      .setDescription(`Welcome to the **${tier.name}** tier`)
+      .setTitle(`${roleInfo.emoji} Credential Verified!`)
+      .setDescription(`Welcome to **${roleInfo.name}**`)
       .addFields(
-        { name: "Type", value: data.credential.type, inline: true },
-        { name: "Tier", value: `${tier.emoji} ${tier.name}`, inline: true },
+        { name: "Type", value: data.credential.tierName ?? data.credential.type, inline: true },
+        { name: "Tier", value: `${roleInfo.emoji} ${roleInfo.name}`, inline: true },
         { name: "Status", value: data.credential.status, inline: true }
       )
-      .setColor(tier.color);
+      .setColor(roleInfo.color);
 
     await interaction.editReply({ embeds: [embed] });
   } catch (err) {
