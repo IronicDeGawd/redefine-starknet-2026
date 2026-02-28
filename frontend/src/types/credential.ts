@@ -7,7 +7,7 @@ export type CredentialType =
   | "wallet_age"
   | "eth_holder"
   | "github_dev"
-  | "leetcode_coder"
+  | "codeforces_coder"
   | "steam_gamer"
   | "strava_athlete";
 

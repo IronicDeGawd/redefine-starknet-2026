@@ -21,7 +21,7 @@ const FELT_TO_TYPE: Record<string, CredentialType> = {
   wallet_age: "wallet_age",
   eth_holder: "eth_holder",
   github_dev: "github_dev",
-  leetcode_coder: "leetcode_coder",
+  codeforces_coder: "codeforces_coder",
   steam_gamer: "steam_gamer",
   strava_athlete: "strava_athlete",
 };
