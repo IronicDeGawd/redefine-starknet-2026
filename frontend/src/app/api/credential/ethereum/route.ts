@@ -1,6 +1,8 @@
 /**
  * /api/credential/ethereum - Issue ETH holder tier credentials
  * Queries ETH balance via public RPC endpoints
+ *
+ * Requires EIP-191 personal_sign signature to prove wallet ownership.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -21,6 +23,7 @@ import {
 } from "@/lib/utils";
 import { verifyEthBalance } from "@/lib/connectors/ethereum";
 import { createCommitment } from "@/lib/crypto/commitment";
+import { verifyEthSignature, isTimestampValid } from "@/lib/utils/ethereum-sig";
 import type { ApiError } from "@/types/api";
 
 export const runtime = "nodejs";
@@ -28,6 +31,8 @@ export const maxDuration = 60;
 
 interface EthCredentialRequest {
   ethAddress: string;
+  signature: string;
+  message: string;
   network?: "mainnet" | "sepolia";
 }
 
@@ -89,6 +94,28 @@ export async function POST(
       return NextResponse.json(
         { success: false, error: "Invalid Ethereum address format" },
         { status: 400 }
+      );
+    }
+
+    // 3.5 Verify wallet ownership via EIP-191 signature
+    if (!body.signature || !body.message) {
+      return NextResponse.json(
+        { success: false, error: "signature and message are required to prove wallet ownership" },
+        { status: 400 }
+      );
+    }
+
+    if (!isTimestampValid(body.message)) {
+      return NextResponse.json(
+        { success: false, error: "Challenge message expired (>5 min). Please sign again." },
+        { status: 401 }
+      );
+    }
+
+    if (!verifyEthSignature(body.message, body.signature, body.ethAddress)) {
+      return NextResponse.json(
+        { success: false, error: "Invalid signature — wallet ownership not proven" },
+        { status: 401 }
       );
     }
 

@@ -27,6 +27,11 @@ export interface BtcWalletState {
   pubkey: string | null;
 }
 
+export interface EthWalletState {
+  status: "disconnected" | "connecting" | "connected";
+  address: string | null;
+}
+
 export interface PendingCredential {
   type: CredentialType;
   tier: Tier;
@@ -46,6 +51,7 @@ interface AppState {
 
   // Wallets
   btcWallet: BtcWalletState;
+  ethWallet: EthWalletState;
 
   // Credentials
   credentials: Credential[];
@@ -61,6 +67,8 @@ interface AppState {
   // Actions - Wallet
   setBtcWallet: (wallet: Partial<BtcWalletState>) => void;
   disconnectBtcWallet: () => void;
+  setEthWallet: (wallet: Partial<EthWalletState>) => void;
+  disconnectEthWallet: () => void;
 
   // Actions - Credentials
   addCredential: (credential: Credential) => void;
@@ -85,6 +93,10 @@ export const useAppStore = create<AppState>()(
         status: "disconnected",
         address: null,
         pubkey: null,
+      },
+      ethWallet: {
+        status: "disconnected",
+        address: null,
       },
 
       // Initial State - Credentials
@@ -138,6 +150,19 @@ export const useAppStore = create<AppState>()(
           },
         }),
 
+      setEthWallet: (wallet) =>
+        set((state) => ({
+          ethWallet: { ...state.ethWallet, ...wallet },
+        })),
+
+      disconnectEthWallet: () =>
+        set({
+          ethWallet: {
+            status: "disconnected",
+            address: null,
+          },
+        }),
+
       // Actions - Credentials
       addCredential: (credential) =>
         set((state) => ({
@@ -167,6 +192,10 @@ export const useAppStore = create<AppState>()(
           status: "disconnected" as const,
           address: null,
           pubkey: null,
+        },
+        ethWallet: state.ethWallet.status === "connected" ? state.ethWallet : {
+          status: "disconnected" as const,
+          address: null,
         },
       }),
     }

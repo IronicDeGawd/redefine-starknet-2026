@@ -110,7 +110,7 @@ function CommitmentExplorer() {
                     >
                         <option value="btc_tier">btc_tier</option>
                         <option value="github_dev">github_dev</option>
-                        <option value="leetcode_coder">leetcode_coder</option>
+                        <option value="codeforces_coder">codeforces_coder</option>
                         <option value="eth_holder">eth_holder</option>
                         <option value="steam_gamer">steam_gamer</option>
                     </select>
