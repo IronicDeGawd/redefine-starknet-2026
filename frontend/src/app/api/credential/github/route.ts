@@ -1,6 +1,6 @@
 /**
  * /api/credential/github - Issue GitHub developer tier credentials
- * Supports both OAuth flow and public username lookup
+ * Requires GitHub OAuth — reads access token from HttpOnly cookie
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -14,7 +14,6 @@ import {
   hashPubkey,
   generateRandomSalt,
   stringToFelt,
-  getErrorMessage,
   parseStarknetError,
   isDuplicateError,
   hashToFelt,
@@ -25,11 +24,6 @@ import type { ApiError } from "@/types/api";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-
-interface GitHubCredentialRequest {
-  username?: string;
-  accessToken?: string;
-}
 
 export async function POST(
   req: NextRequest
@@ -42,37 +36,17 @@ export async function POST(
       );
     }
 
-    let body: GitHubCredentialRequest;
-    try {
-      body = await req.json();
-    } catch {
+    // Read OAuth token from HttpOnly cookie (set by /api/auth/github/callback)
+    const accessToken = req.cookies.get("gh_verified_token")?.value;
+    if (!accessToken) {
       return NextResponse.json(
-        { success: false, error: "Invalid JSON body" },
-        { status: 400 }
+        { success: false, error: "GitHub OAuth not completed. Please authenticate via GitHub first." },
+        { status: 401 }
       );
     }
 
-    if (!body.username && !body.accessToken) {
-      return NextResponse.json(
-        { success: false, error: "Either username or accessToken is required" },
-        { status: 400 }
-      );
-    }
-
-    // [3.1] Validate GitHub username format
-    if (body.username && !/^[a-zA-Z0-9][a-zA-Z0-9-]{0,38}$/.test(body.username)) {
-      return NextResponse.json(
-        { success: false, error: "Invalid GitHub username format" },
-        { status: 400 }
-      );
-    }
-
-    // Verify GitHub profile
-    const isOAuth = !!body.accessToken;
-    const verification = await verifyGitHub(
-      body.accessToken || body.username!,
-      isOAuth
-    );
+    // Verify GitHub profile using the authenticated token
+    const verification = await verifyGitHub(accessToken, true);
 
     if (!verification.success) {
       return NextResponse.json(
@@ -81,7 +55,14 @@ export async function POST(
       );
     }
 
-    const identifier = verification.profile?.username || body.username!;
+    const identifier = verification.profile?.username;
+    if (!identifier) {
+      return NextResponse.json(
+        { success: false, error: "Could not determine GitHub username from OAuth" },
+        { status: 502 }
+      );
+    }
+
     const pubkeyHash = hashPubkey(identifier);
     const salt = generateRandomSalt();
     const credentialTypeFelt = stringToFelt("github_dev");
@@ -102,7 +83,8 @@ export async function POST(
 
     await provider.waitForTransaction(tx.transaction_hash);
 
-    return NextResponse.json({
+    // Clear the OAuth cookie after successful issuance
+    const response = NextResponse.json({
       success: true,
       credentialId: `${pubkeyHash.slice(0, 16)}`,
       transactionHash: tx.transaction_hash,
@@ -121,9 +103,10 @@ export async function POST(
       },
       commitment,
     });
+    response.cookies.delete("gh_verified_token");
+    return response;
   } catch (error) {
     console.error("[/api/credential/github] Error:", error);
-    const errorMessage = getErrorMessage(error);
 
     if (isDuplicateError(error)) {
       return NextResponse.json(

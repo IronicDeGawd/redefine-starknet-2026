@@ -1,6 +1,7 @@
 /**
  * /api/auth/github/callback - GitHub OAuth callback handler
- * Exchanges code for access token and redirects to /connect
+ * Validates CSRF state, exchanges code for access token,
+ * stores token in HttpOnly cookie, and redirects to /connect.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -25,6 +26,15 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     );
   }
 
+  // Validate CSRF state
+  const stateParam = searchParams.get("state");
+  const stateCookie = req.cookies.get("gh_oauth_state")?.value;
+  if (!stateParam || !stateCookie || stateParam !== stateCookie) {
+    return NextResponse.redirect(
+      new URL("/connect?error=invalid_state", req.url)
+    );
+  }
+
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
@@ -37,12 +47,19 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   try {
     const accessToken = await exchangeCode(code, clientId, clientSecret);
 
-    return NextResponse.redirect(
-      new URL(
-        `/connect?github_token=${encodeURIComponent(accessToken)}`,
-        req.url
-      )
+    // Store token in HttpOnly cookie (not in URL)
+    const response = NextResponse.redirect(
+      new URL("/connect?github_success=true", req.url)
     );
+    response.cookies.set("gh_verified_token", accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 300, // 5 minutes
+      path: "/",
+    });
+    response.cookies.delete("gh_oauth_state");
+    return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "OAuth failed";
     return NextResponse.redirect(
