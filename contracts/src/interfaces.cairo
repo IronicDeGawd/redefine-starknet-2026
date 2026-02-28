@@ -6,7 +6,7 @@ pub struct Credential {
     /// Poseidon hash of the user's public key / identifier (privacy: don't store raw data)
     pub pubkey_hash: felt252,
     /// Type identifier: 'btc_tier', 'wallet_age', 'github_dev', 'steam_gamer',
-    /// 'leetcode_coder', 'eth_holder', 'strava_athlete'
+    /// 'codeforces_coder', 'eth_holder', 'strava_athlete'
     pub credential_type: felt252,
     /// Tier level: 0-3
     pub tier: u8,

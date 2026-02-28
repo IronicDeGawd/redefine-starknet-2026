@@ -245,13 +245,13 @@ fn test_steam_credential() {
 fn test_leetcode_credential() {
     let (contract_address, registry) = deploy_registry();
 
-    let c = compute_commitment(0x333, 'leetcode_coder', 1, 0xfed, 0xabc);
+    let c = compute_commitment(0x333, 'codeforces_coder', 1, 0xfed, 0xabc);
     let id = issue_as_owner(
-        contract_address, registry, 0x333, 'leetcode_coder', 1, 0xabc, 0xfed, 'leetcode', c,
+        contract_address, registry, 0x333, 'codeforces_coder', 1, 0xabc, 0xfed, 'leetcode', c,
     );
 
     let cred = registry.get_credential(id);
-    assert(cred.credential_type == 'leetcode_coder', 'Wrong type');
+    assert(cred.credential_type == 'codeforces_coder', 'Wrong type');
     assert(cred.tier == 1, 'Wrong tier');
 }
 
@@ -293,7 +293,7 @@ fn test_all_types_for_same_user() {
     let c2 = compute_commitment(pubkey, 'wallet_age', 2, 0, 0x2);
     let c3 = compute_commitment(pubkey, 'github_dev', 3, 0, 0x3);
     let c4 = compute_commitment(pubkey, 'steam_gamer', 0, 0, 0x4);
-    let c5 = compute_commitment(pubkey, 'leetcode_coder', 1, 0, 0x5);
+    let c5 = compute_commitment(pubkey, 'codeforces_coder', 1, 0, 0x5);
     let c6 = compute_commitment(pubkey, 'eth_holder', 2, 0, 0x6);
     let c7 = compute_commitment(pubkey, 'strava_athlete', 3, 0, 0x7);
 
@@ -302,7 +302,7 @@ fn test_all_types_for_same_user() {
     registry.issue_credential(pubkey, 'wallet_age', 2, 0x2, 0, 0, c2);
     registry.issue_credential(pubkey, 'github_dev', 3, 0x3, 0, 0, c3);
     registry.issue_credential(pubkey, 'steam_gamer', 0, 0x4, 0, 0, c4);
-    registry.issue_credential(pubkey, 'leetcode_coder', 1, 0x5, 0, 0, c5);
+    registry.issue_credential(pubkey, 'codeforces_coder', 1, 0x5, 0, 0, c5);
     registry.issue_credential(pubkey, 'eth_holder', 2, 0x6, 0, 0, c6);
     registry.issue_credential(pubkey, 'strava_athlete', 3, 0x7, 0, 0, c7);
     stop_cheat_caller_address(contract_address);
@@ -499,8 +499,8 @@ fn test_total_issued_counter() {
     issue_as_owner(contract_address, registry, 0x222, 'github_dev', 2, 0xbbb, 0, 0, c2);
     assert(registry.get_total_issued() == 2, 'Should be 2');
 
-    let c3 = compute_commitment(0x333, 'leetcode_coder', 3, 0, 0xccc);
-    issue_as_owner(contract_address, registry, 0x333, 'leetcode_coder', 3, 0xccc, 0, 0, c3);
+    let c3 = compute_commitment(0x333, 'codeforces_coder', 3, 0, 0xccc);
+    issue_as_owner(contract_address, registry, 0x333, 'codeforces_coder', 3, 0xccc, 0, 0, c3);
     assert(registry.get_total_issued() == 3, 'Should be 3');
 }
 

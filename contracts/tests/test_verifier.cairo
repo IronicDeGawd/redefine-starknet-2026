@@ -147,9 +147,9 @@ fn test_verify_github_credential() {
 fn test_verify_leetcode_credential() {
     let (registry_address, registry, verifier) = deploy_system();
 
-    let c = compute_commitment(0x555, 'leetcode_coder', 2, 0xfed, 0xabc);
+    let c = compute_commitment(0x555, 'codeforces_coder', 2, 0xfed, 0xabc);
     let id = issue_as_owner(
-        registry_address, registry, 0x555, 'leetcode_coder', 2, 0xabc, 0xfed, 'leetcode', c,
+        registry_address, registry, 0x555, 'codeforces_coder', 2, 0xabc, 0xfed, 'codeforces', c,
     );
 
     assert(verifier.is_fish_or_above(id), 'Should be tier 2+');

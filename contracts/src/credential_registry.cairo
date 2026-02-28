@@ -110,7 +110,7 @@ pub mod CredentialRegistry {
             || credential_type == 'wallet_age'
             || credential_type == 'github_dev'
             || credential_type == 'steam_gamer'
-            || credential_type == 'leetcode_coder'
+            || credential_type == 'codeforces_coder'
             || credential_type == 'eth_holder'
             || credential_type == 'strava_athlete'
     }
