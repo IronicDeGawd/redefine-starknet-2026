@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import {
+  LayoutDashboard,
   MessageSquare,
   BadgeCheck,
   Shield,
@@ -19,8 +20,9 @@ import {
 } from "lucide-react";
 
 const navItems = [
+  { href: "/", label: "Overview", icon: LayoutDashboard },
   { href: "/connect", label: "Connect", icon: Plug },
-  { href: "/", label: "Chat", icon: MessageSquare },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/credentials", label: "Credentials", icon: BadgeCheck },
   { href: "/passport", label: "Passport", icon: Fingerprint },
   { href: "/verify", label: "Verify", icon: Shield },

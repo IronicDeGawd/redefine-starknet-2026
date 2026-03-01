@@ -21,12 +21,7 @@ export function AppShell({ children }: AppShellProps) {
     return <>{children}</>;
   }
 
-  // Show landing page for disconnected users on the home route
-  if (!isConnected && pathname === "/") {
-    return <LandingPage />;
-  }
-
-  // For disconnected users on other routes, redirect to landing
+  // Disconnected users see the landing page
   if (!isConnected) {
     return <LandingPage />;
   }
@@ -40,7 +35,7 @@ export function AppShell({ children }: AppShellProps) {
       {/* Main Content */}
       <div className="flex-1 md:ml-[247px] flex flex-col h-screen overflow-hidden">
         <Header />
-        <main className={`flex-1 flex flex-col min-h-0 ${pathname === "/" ? "pb-20 md:pb-0" : "p-6 pb-20 md:pb-6 overflow-y-auto"}`}>{children}</main>
+        <main className={`flex-1 flex flex-col min-h-0 ${pathname === "/chat" ? "pb-20 md:pb-0" : "p-6 pb-20 md:pb-6 overflow-y-auto"}`}>{children}</main>
       </div>
 
       {/* Mobile Navigation */}
