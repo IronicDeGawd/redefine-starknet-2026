@@ -122,9 +122,14 @@ export function useChat() {
 function getToolDescription(toolName: string): string {
   const descriptions: Record<string, string> = {
     connect_btc_wallet: "connect your Bitcoin wallet",
+    connect_eth_wallet: "connect your Ethereum wallet",
+    start_oauth: "authenticate your account",
+    request_signature: "request your signature",
     sign_credential_request: "request your signature",
     issue_credential: "issue your credential on Starknet",
     verify_credential: "verify the credential",
+    connect_starknet_wallet: "connect your Starknet wallet",
+    mint_badge_nft: "mint your badge NFT",
   };
   return descriptions[toolName] || "process your request";
 }

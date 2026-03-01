@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown, Diamond, Hexagon, HelpCircle, MessageSquare } from "lucide-react";
+import { Bitcoin, Wallet, Github, HelpCircle, MessageSquare } from "lucide-react";
 
 interface WelcomeScreenProps {
   onQuickAction: (message: string) => void;
@@ -8,28 +8,28 @@ interface WelcomeScreenProps {
 
 const quickActions = [
   {
-    label: "Prove I'm a Whale",
-    message: "I want to prove I hold more than 100 BTC",
-    icon: Crown,
-    color: "text-violet-600",
-    bgColor: "bg-violet-50",
-    hoverBg: "hover:bg-violet-100",
+    label: "Prove BTC Holdings",
+    message: "I want to prove my Bitcoin holdings",
+    icon: Bitcoin,
+    color: "text-amber-600",
+    bgColor: "bg-amber-50",
+    hoverBg: "hover:bg-amber-100",
   },
   {
-    label: "Prove I'm a Fish",
-    message: "I want to create a Fish tier credential (10-100 BTC)",
-    icon: Diamond,
+    label: "Verify ETH Holdings",
+    message: "I want to prove my Ethereum holdings",
+    icon: Wallet,
     color: "text-blue-600",
     bgColor: "bg-blue-50",
     hoverBg: "hover:bg-blue-100",
   },
   {
-    label: "Prove I'm a Crab",
-    message: "I want to prove I hold between 1-10 BTC",
-    icon: Hexagon,
-    color: "text-amber-600",
-    bgColor: "bg-amber-50",
-    hoverBg: "hover:bg-amber-100",
+    label: "Prove GitHub Dev",
+    message: "I want to create a GitHub developer credential",
+    icon: Github,
+    color: "text-violet-600",
+    bgColor: "bg-violet-50",
+    hoverBg: "hover:bg-violet-100",
   },
   {
     label: "How does it work?",

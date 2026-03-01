@@ -3,12 +3,15 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { useBtcWallet } from "@/hooks/useBtcWallet";
+import { useEthWallet } from "@/hooks/useEthWallet";
 import { useCredential } from "@/hooks/useCredential";
-import { TierBadge, TierIcon } from "@/components/credential/TierBadge";
+import { TierIcon } from "@/components/credential/TierBadge";
 import type { ToolUse } from "@/types/api";
 import type { Tier, CredentialType } from "@/types/credential";
-import { Wallet, PenTool, Send, CheckCircle2, AlertCircle, Bitcoin } from "lucide-react";
+import { Wallet, PenTool, Send, CheckCircle2, AlertCircle, Bitcoin, Github, Code2, Gamepad2, Activity, Search, Sparkles, LinkIcon } from "lucide-react";
 import { TIER_NAMES, TIER_RANGES } from "@/types/credential";
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 interface ToolActionProps {
   toolUse: ToolUse;
@@ -22,11 +25,23 @@ export function ToolAction({ toolUse, onAction }: ToolActionProps) {
     case "connect_btc_wallet":
       return <ConnectWalletAction onAction={onAction} />;
 
+    case "connect_eth_wallet":
+      return <ConnectEthWalletAction onAction={onAction} />;
+
+    case "request_signature":
     case "sign_credential_request":
       return (
         <SignRequestAction
-          credentialType={input.credential_type as CredentialType}
+          credentialType={(input.credentialType ?? input.credential_type) as CredentialType}
           tier={input.tier as Tier}
+          onAction={onAction}
+        />
+      );
+
+    case "start_oauth":
+      return (
+        <StartOAuthAction
+          platform={input.platform as string}
           onAction={onAction}
         />
       );
@@ -35,6 +50,26 @@ export function ToolAction({ toolUse, onAction }: ToolActionProps) {
       return (
         <IssueCredentialAction
           input={input as unknown as IssueCredentialInput}
+          onAction={onAction}
+        />
+      );
+
+    case "verify_credential":
+      return (
+        <VerifyCredentialAction
+          credentialId={input.credentialId as string}
+          onAction={onAction}
+        />
+      );
+
+    case "connect_starknet_wallet":
+      return <ConnectStarknetAction onAction={onAction} />;
+
+    case "mint_badge_nft":
+      return (
+        <MintBadgeAction
+          credentialType={input.credentialType as CredentialType}
+          tier={input.tier as Tier}
           onAction={onAction}
         />
       );
@@ -349,6 +384,340 @@ function ProgressStep({
       >
         {label}
       </span>
+    </div>
+  );
+}
+
+// ============================================
+// Connect ETH Wallet Action
+// ============================================
+
+function ConnectEthWalletAction({ onAction }: { onAction: (action: string, data?: unknown) => void }) {
+  const { connect, isConnecting, isConnected, address } = useEthWallet();
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConnect = async () => {
+    setError(null);
+    try {
+      const result = await connect();
+      onAction("connected", result);
+    } catch {
+      setError("Failed to connect MetaMask. Is it installed?");
+    }
+  };
+
+  if (isConnected && address) {
+    return (
+      <div className="p-4 bg-white rounded-2xl border border-[var(--success)]/30 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-xl bg-[var(--success-light)] flex items-center justify-center">
+            <CheckCircle2 className="w-6 h-6 text-[var(--success)]" />
+          </div>
+          <div>
+            <p className="font-semibold text-[var(--text-primary)]">Wallet Connected</p>
+            <p className="text-sm text-[var(--text-muted)] font-mono">
+              {address.slice(0, 8)}...{address.slice(-6)}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
+          <Wallet className="w-6 h-6 text-blue-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-[var(--text-primary)]">Connect Ethereum Wallet</p>
+          <p className="text-sm text-[var(--text-muted)]">
+            Connect via MetaMask to prove wallet ownership
+          </p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--error-light)] rounded-xl text-sm text-[var(--error)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <Button onClick={handleConnect} isLoading={isConnecting} className="w-full">
+        <Wallet className="w-4 h-4" />
+        Connect with MetaMask
+      </Button>
+    </div>
+  );
+}
+
+// ============================================
+// Start OAuth Action
+// ============================================
+
+const OAUTH_CONFIG: Record<string, { label: string; icon: typeof Github; color: string; bgColor: string }> = {
+  github:     { label: "GitHub",     icon: Github,   color: "text-violet-600", bgColor: "bg-violet-100" },
+  codeforces: { label: "Codeforces", icon: Code2,    color: "text-blue-600",   bgColor: "bg-blue-100" },
+  steam:      { label: "Steam",      icon: Gamepad2, color: "text-gray-600",   bgColor: "bg-gray-100" },
+  strava:     { label: "Strava",     icon: Activity, color: "text-orange-600", bgColor: "bg-orange-100" },
+};
+
+function StartOAuthAction({
+  platform,
+  onAction,
+}: {
+  platform: string;
+  onAction: (action: string, data?: unknown) => void;
+}) {
+  const config = OAUTH_CONFIG[platform];
+  const Icon = config?.icon ?? LinkIcon;
+  const label = config?.label ?? platform;
+
+  const handleAuth = () => {
+    onAction("started", { platform });
+  };
+
+  return (
+    <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className={`w-12 h-12 rounded-xl ${config?.bgColor ?? "bg-gray-100"} flex items-center justify-center`}>
+          <Icon className={`w-6 h-6 ${config?.color ?? "text-gray-600"}`} />
+        </div>
+        <div>
+          <p className="font-semibold text-[var(--text-primary)]">Authenticate with {label}</p>
+          <p className="text-sm text-[var(--text-muted)]">
+            You&apos;ll be redirected to log in and verify your account
+          </p>
+        </div>
+      </div>
+
+      <Button onClick={handleAuth} className="w-full">
+        <Icon className="w-4 h-4" />
+        Connect {label}
+      </Button>
+    </div>
+  );
+}
+
+// ============================================
+// Verify Credential Action
+// ============================================
+
+function VerifyCredentialAction({
+  credentialId,
+  onAction,
+}: {
+  credentialId: string;
+  onAction: (action: string, data?: unknown) => void;
+}) {
+  const [status, setStatus] = useState<"idle" | "verifying" | "done">("idle");
+  const [result, setResult] = useState<{ valid: boolean; credential?: Record<string, unknown> } | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleVerify = async () => {
+    setStatus("verifying");
+    setError(null);
+    try {
+      const res = await fetch(
+        `${BASE_PATH}/api/verify?id=${encodeURIComponent(credentialId)}`
+      );
+      const data = await res.json();
+      setResult(data);
+      setStatus("done");
+      onAction("verified", data);
+    } catch {
+      setError("Verification failed. Please try again.");
+      setStatus("idle");
+    }
+  };
+
+  if (status === "done" && result) {
+    return (
+      <div className={`p-5 bg-white rounded-2xl border shadow-sm ${result.valid ? "border-[var(--success)]/30" : "border-[var(--error)]/30"}`}>
+        <div className="flex items-center gap-4">
+          <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${result.valid ? "bg-[var(--success-light)]" : "bg-[var(--error-light)]"}`}>
+            {result.valid ? (
+              <CheckCircle2 className="w-6 h-6 text-[var(--success)]" />
+            ) : (
+              <AlertCircle className="w-6 h-6 text-[var(--error)]" />
+            )}
+          </div>
+          <div>
+            <p className="font-semibold text-[var(--text-primary)]">
+              {result.valid ? "Credential Valid" : "Credential Invalid"}
+            </p>
+            <p className="text-sm text-[var(--text-muted)] font-mono">
+              {credentialId.slice(0, 10)}...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
+          <Search className="w-6 h-6 text-emerald-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-[var(--text-primary)]">Verify Credential</p>
+          <p className="text-sm text-[var(--text-muted)] font-mono">
+            {credentialId.slice(0, 14)}...
+          </p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--error-light)] rounded-xl text-sm text-[var(--error)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <Button onClick={handleVerify} isLoading={status === "verifying"} className="w-full">
+        <Search className="w-4 h-4" />
+        Verify on Starknet
+      </Button>
+    </div>
+  );
+}
+
+// ============================================
+// Connect Starknet Wallet Action
+// ============================================
+
+function ConnectStarknetAction({ onAction }: { onAction: (action: string, data?: unknown) => void }) {
+  const [error, setError] = useState<string | null>(null);
+
+  const handleConnect = () => {
+    setError(null);
+    // For hackathon: placeholder — real implementation would use get-starknet
+    onAction("connected", { address: null, message: "Starknet wallet integration coming soon" });
+  };
+
+  return (
+    <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+          <LinkIcon className="w-6 h-6 text-indigo-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-[var(--text-primary)]">Connect Starknet Wallet</p>
+          <p className="text-sm text-[var(--text-muted)]">
+            Connect Argent X or Braavos to mint badge NFTs
+          </p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--error-light)] rounded-xl text-sm text-[var(--error)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <Button onClick={handleConnect} className="w-full">
+        <LinkIcon className="w-4 h-4" />
+        Connect Starknet Wallet
+      </Button>
+    </div>
+  );
+}
+
+// ============================================
+// Mint Badge NFT Action
+// ============================================
+
+function MintBadgeAction({
+  credentialType,
+  tier,
+  onAction,
+}: {
+  credentialType: CredentialType;
+  tier: Tier;
+  onAction: (action: string, data?: unknown) => void;
+}) {
+  const [status, setStatus] = useState<"idle" | "minting" | "success">("idle");
+  const [error, setError] = useState<string | null>(null);
+
+  const handleMint = async () => {
+    setStatus("minting");
+    setError(null);
+    try {
+      const res = await fetch(`${BASE_PATH}/api/nft/mint`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ credentialType, tier }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setStatus("success");
+        onAction("minted", data);
+      } else {
+        setError(data.error || "Minting failed");
+        setStatus("idle");
+      }
+    } catch {
+      setError("Minting failed. Please try again.");
+      setStatus("idle");
+    }
+  };
+
+  if (status === "success") {
+    return (
+      <div className="p-5 bg-white rounded-2xl border border-[var(--success)]/30 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-[var(--success-light)] flex items-center justify-center">
+            <CheckCircle2 className="w-6 h-6 text-[var(--success)]" />
+          </div>
+          <div>
+            <p className="font-semibold text-[var(--text-primary)]">Badge Minted!</p>
+            <p className="text-sm text-[var(--text-muted)]">
+              Your soulbound badge NFT has been minted on Starknet
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+          <Sparkles className="w-6 h-6 text-purple-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-[var(--text-primary)]">Mint Badge NFT</p>
+          <p className="text-sm text-[var(--text-muted)]">
+            Mint a soulbound badge for your {TIER_NAMES[tier]} tier
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-5 px-4 py-3 bg-[var(--grey-100)] rounded-xl">
+        <TierIcon tier={tier} size="md" />
+        <div>
+          <p className="text-sm font-semibold text-[var(--text-primary)]">{TIER_NAMES[tier]} Tier</p>
+          <p className="text-xs text-[var(--text-muted)]">{TIER_RANGES[tier]}</p>
+        </div>
+      </div>
+
+      {error && (
+        <div className="flex items-center gap-2 mb-4 p-3 bg-[var(--error-light)] rounded-xl text-sm text-[var(--error)]">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          {error}
+        </div>
+      )}
+
+      <Button onClick={handleMint} isLoading={status === "minting"} className="w-full">
+        <Sparkles className="w-4 h-4" />
+        Mint Badge NFT
+      </Button>
     </div>
   );
 }
