@@ -45,12 +45,13 @@ export async function POST(
     const request = body as ChatRequest & { sessionId?: string };
     const sessionId = request.sessionId || req.headers.get("x-session-id") || "anonymous";
 
-    // 3. Content filtering on user messages
-    const lastUserMessage = request.messages.filter((m) => m.role === "user").pop();
+    // 3. Content filtering on user messages (skip tool result messages)
+    const lastUserMessage = request.messages
+      .filter((m) => m.role === "user" && m.content && !m.toolResult)
+      .pop();
     if (lastUserMessage) {
       const filterResult = filterUserInput(lastUserMessage.content);
       if (!filterResult.allowed) {
-        // Return a polite redirect message instead of error
         return NextResponse.json({
           type: "text",
           content: filterResult.reason || "I can only help with ZKCred-related questions.",
@@ -58,10 +59,12 @@ export async function POST(
       }
     }
 
-    // 4. Sanitize message content
-    const sanitizedMessages = request.messages.map((msg) => ({
+    // 4. Sanitize message content (preserve toolUse/toolResult for Bedrock)
+    const sanitizedMessages: ChatMessage[] = request.messages.map((msg) => ({
       role: msg.role,
-      content: sanitizeString(msg.content, 5000), // Reduced from 10000
+      content: sanitizeString(msg.content, 5000),
+      ...(msg.toolUse ? { toolUse: msg.toolUse } : {}),
+      ...(msg.toolResult ? { toolResult: msg.toolResult } : {}),
     }));
 
     // 5. Load previous session messages if Redis is available

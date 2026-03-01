@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useRef } from "react";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ChatMessage, ChatResponse, ToolResult } from "@/types/api";
 
@@ -16,6 +16,10 @@ export function useChat() {
     setPendingToolUse,
   } = useAppStore();
 
+  // Use ref for latest messages to avoid stale closure in submitToolResult
+  const messagesRef = useRef(messages);
+  messagesRef.current = messages;
+
   const sendMessage = useCallback(
     async (content: string, toolResults?: ToolResult[]) => {
       // Add user message (only if not a tool result)
@@ -30,13 +34,36 @@ export function useChat() {
       setPendingToolUse(null);
 
       try {
-        // Build messages array for API
-        const apiMessages: ChatMessage[] = messages
-          .filter((m) => !m.toolUse) // Exclude tool use messages from history
-          .map((m) => ({
-            role: m.role,
-            content: m.content,
-          }));
+        // Build messages array for API — include tool interactions
+        const currentMessages = messagesRef.current;
+        const apiMessages: ChatMessage[] = [];
+
+        for (const m of currentMessages) {
+          if (m.toolUse) {
+            // Assistant message that contains a tool call
+            apiMessages.push({
+              role: "assistant",
+              content: m.content,
+              toolUse: m.toolUse,
+            });
+            // If this tool has a result, add the tool result as a user message
+            if (m.toolResult) {
+              apiMessages.push({
+                role: "user",
+                content: "",
+                toolResult: {
+                  toolUseId: m.toolUse.id,
+                  result: m.toolResult.data,
+                },
+              });
+            }
+          } else {
+            apiMessages.push({
+              role: m.role,
+              content: m.content,
+            });
+          }
+        }
 
         // Add the new user message
         if (!toolResults) {
@@ -68,10 +95,9 @@ export function useChat() {
             content: data.content,
           });
         } else if (data.type === "tool_use" && data.toolUse) {
-          // Add assistant message with tool use
           addMessage({
             role: "assistant",
-            content: `I'll help you with that. Let me ${getToolDescription(data.toolUse.name)}...`,
+            content: data.content || `Let me ${getToolDescription(data.toolUse.name)}...`,
             toolUse: data.toolUse,
           });
           setPendingToolUse(data.toolUse);
@@ -86,13 +112,14 @@ export function useChat() {
         setAgentThinking(false);
       }
     },
-    [messages, sessionId, addMessage, setAgentThinking, setPendingToolUse]
+    [sessionId, addMessage, setAgentThinking, setPendingToolUse]
   );
 
   const submitToolResult = useCallback(
     async (toolUseId: string, result: unknown, success: boolean = true) => {
       // Update the message with tool result
-      const messageWithTool = messages.find((m) => m.toolUse?.id === toolUseId);
+      const currentMessages = messagesRef.current;
+      const messageWithTool = currentMessages.find((m) => m.toolUse?.id === toolUseId);
       if (messageWithTool) {
         updateMessage(messageWithTool.id, {
           toolResult: { success, data: result },
@@ -107,7 +134,7 @@ export function useChat() {
         },
       ]);
     },
-    [messages, updateMessage, sendMessage]
+    [updateMessage, sendMessage]
   );
 
   return {
