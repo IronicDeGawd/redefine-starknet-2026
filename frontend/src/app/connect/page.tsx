@@ -21,6 +21,8 @@ import {
     Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useBtcWallet } from "@/hooks/useBtcWallet";
+import { getOpenIDUrl } from "@/lib/connectors/steam";
 
 type ConnectorStatus = "idle" | "connecting" | "verifying" | "success" | "error";
 
@@ -57,9 +59,7 @@ const CONNECTORS: ConnectorConfig[] = [
             { name: "Fish", emoji: "🐟", description: "10-100 BTC" },
             { name: "Whale", emoji: "🐋", description: "100+ BTC" },
         ],
-        inputType: "address",
-        inputPlaceholder: "Enter BTC address (bc1... or 1...)",
-        inputLabel: "Bitcoin Address",
+        inputType: "wallet",
         apiEndpoint: "/api/credential/verified",
         available: true,
     },
@@ -135,9 +135,7 @@ const CONNECTORS: ConnectorConfig[] = [
             { name: "Hardcore", emoji: "🎯", description: "50-200 games" },
             { name: "Legend", emoji: "👾", description: "200+ games" },
         ],
-        inputType: "username",
-        inputPlaceholder: "Enter Steam ID",
-        inputLabel: "Steam ID (64-bit)",
+        inputType: "oauth",
         apiEndpoint: "/api/credential/steam",
         available: true,
     },
@@ -233,6 +231,7 @@ export default function ConnectPage() {
 
 function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     const searchParams = useSearchParams();
+    const btcWallet = useBtcWallet();
     const [status, setStatus] = useState<ConnectorStatus>("idle");
     const [input, setInput] = useState("");
     const [result, setResult] = useState<{
@@ -243,11 +242,13 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     const [error, setError] = useState<string | null>(null);
     const [expanded, setExpanded] = useState(false);
     const [ethAddress, setEthAddress] = useState<string | null>(null);
+    const [btcConnected, setBtcConnected] = useState<{ address: string; pubkey: string } | null>(null);
 
     // Auto-expand after OAuth callback redirect
     const returnedFromOAuth =
         (connector.id === "codeforces" && searchParams.get("codeforces_success") === "true") ||
-        (connector.id === "github" && searchParams.get("github_success") === "true");
+        (connector.id === "github" && searchParams.get("github_success") === "true") ||
+        (connector.id === "steam" && searchParams.get("steam_success") === "true");
     useEffect(() => {
         if (returnedFromOAuth) setExpanded(true);
     }, [returnedFromOAuth]);
@@ -302,6 +303,53 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
         }
     };
 
+    const handleBtcConnect = async () => {
+        setStatus("connecting");
+        setError(null);
+        try {
+            const result = await btcWallet.connect();
+            setBtcConnected({ address: result.address, pubkey: result.pubkey });
+            setStatus("idle");
+        } catch (err) {
+            setStatus("error");
+            setError(err instanceof Error ? err.message : "Wallet connection failed");
+        }
+    };
+
+    const handleBtcVerify = async () => {
+        if (!btcConnected) return;
+        setStatus("verifying");
+        setError(null);
+        setResult(null);
+        try {
+            const message = `ZKCred Credential Request\nType: btc_tier\nAddress: ${btcConnected.address}\nTimestamp: ${Date.now()}`;
+            const signature = await btcWallet.signMessage(message);
+
+            const res = await fetch(`${BASE_PATH}${connector.apiEndpoint}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    btcAddress: btcConnected.address,
+                    btcPubkey: btcConnected.pubkey,
+                    signature,
+                    message,
+                    credentialType: "btc_tier",
+                }),
+            });
+            const data = await res.json();
+            if (data.success) {
+                setStatus("success");
+                setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash });
+            } else {
+                setStatus("error");
+                setError(data.error || "Verification failed");
+            }
+        } catch (err) {
+            setStatus("error");
+            setError(err instanceof Error ? err.message : "Signing failed");
+        }
+    };
+
     const handleOAuthRedirect = (provider: string) => {
         if (provider === "codeforces") {
             const clientId = process.env.NEXT_PUBLIC_CODEFORCES_CLIENT_ID;
@@ -323,6 +371,9 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             document.cookie = `gh_oauth_state=${state};path=/;max-age=300;samesite=strict`;
             const redirectUri = `${window.location.origin}${BASE_PATH}/api/auth/github/callback`;
             window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user&state=${state}`;
+        } else if (provider === "steam") {
+            const returnUrl = `${window.location.origin}${BASE_PATH}/api/auth/steam/callback`;
+            window.location.href = getOpenIDUrl(returnUrl);
         }
     };
 
@@ -361,11 +412,6 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
 
         try {
             const body: Record<string, string> = {};
-            if (connector.id === "steam") body.steamId = input.trim();
-            if (connector.id === "bitcoin") {
-                body.btcAddress = input.trim();
-                body.credentialType = "btc_tier";
-            }
 
             const res = await fetch(`${BASE_PATH}${connector.apiEndpoint}`, {
                 method: "POST",
@@ -474,7 +520,45 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                         </>
                     )}
 
-                    {/* ETH Wallet: connect → sign → verify */}
+                    {/* BTC Wallet: connect via Xverse → sign → verify */}
+                    {connector.inputType === "wallet" && connector.id === "bitcoin" && (
+                        <div className="space-y-3">
+                            {!btcConnected ? (
+                                <Button
+                                    onClick={handleBtcConnect}
+                                    disabled={status === "connecting"}
+                                    className="w-full"
+                                >
+                                    {status === "connecting" ? (
+                                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                    ) : (
+                                        <Bitcoin className="w-4 h-4 mr-2" />
+                                    )}
+                                    Connect with Xverse
+                                </Button>
+                            ) : (
+                                <>
+                                    <div className="text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)] rounded-lg px-3 py-2 font-mono truncate">
+                                        {btcConnected.address}
+                                    </div>
+                                    <Button
+                                        onClick={handleBtcVerify}
+                                        disabled={status === "verifying"}
+                                        className="w-full"
+                                    >
+                                        {status === "verifying" ? (
+                                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                                        ) : (
+                                            <Shield className="w-4 h-4 mr-2" />
+                                        )}
+                                        Sign & Verify
+                                    </Button>
+                                </>
+                            )}
+                        </div>
+                    )}
+
+                    {/* ETH Wallet: connect MetaMask → sign → verify */}
                     {connector.inputType === "wallet" && connector.id === "ethereum" && (
                         <div className="space-y-3">
                             {!ethAddress ? (
@@ -542,6 +626,21 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                                     </Button>
                                     <p className="text-xs text-[var(--text-muted)]">
                                         Redirects to GitHub for OAuth authentication
+                                    </p>
+                                </>
+                            )}
+                            {connector.id === "steam" && !returnedFromOAuth && (
+                                <>
+                                    <Button
+                                        onClick={() => handleOAuthRedirect("steam")}
+                                        disabled={status === "verifying"}
+                                        className="w-full"
+                                    >
+                                        <Gamepad2 className="w-4 h-4 mr-2" />
+                                        Login with Steam
+                                    </Button>
+                                    <p className="text-xs text-[var(--text-muted)]">
+                                        Redirects to Steam for OpenID authentication
                                     </p>
                                 </>
                             )}
