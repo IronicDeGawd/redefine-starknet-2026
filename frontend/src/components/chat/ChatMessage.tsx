@@ -1,6 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/cn";
+import ReactMarkdown from "react-markdown";
 import type { Message } from "@/stores/useAppStore";
 import { ToolAction } from "./ToolAction";
 import { TierIcon } from "@/components/credential/TierBadge";
@@ -60,9 +61,15 @@ export function ChatMessage({ message, onToolAction }: ChatMessageProps) {
               : "bg-white text-[var(--text-primary)] border border-[var(--border-light)] rounded-bl-md"
           )}
         >
-          <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
-            {message.content}
-          </p>
+          {isUser ? (
+            <p className="text-[15px] leading-relaxed whitespace-pre-wrap">
+              {message.content}
+            </p>
+          ) : (
+            <div className="text-[15px] leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-strong:text-[var(--text-primary)] prose-headings:text-[var(--text-primary)]">
+              <ReactMarkdown>{message.content}</ReactMarkdown>
+            </div>
+          )}
         </div>
 
         {showToolAction && message.toolUse ? (

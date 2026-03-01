@@ -33,14 +33,14 @@ export function AppShell({ children }: AppShellProps) {
 
   // Connected users get the full app shell
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       {/* Desktop Sidebar */}
       <Sidebar />
 
       {/* Main Content */}
-      <div className="flex-1 md:ml-[247px] flex flex-col min-h-screen">
+      <div className="flex-1 md:ml-[247px] flex flex-col h-screen overflow-hidden">
         <Header />
-        <main className="flex-1 flex flex-col p-6 pb-20 md:pb-6">{children}</main>
+        <main className={`flex-1 flex flex-col min-h-0 ${pathname === "/" ? "pb-20 md:pb-0" : "p-6 pb-20 md:pb-6 overflow-y-auto"}`}>{children}</main>
       </div>
 
       {/* Mobile Navigation */}

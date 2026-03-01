@@ -43,11 +43,11 @@ const quickActions = [
 
 export function WelcomeScreen({ onQuickAction }: WelcomeScreenProps) {
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
+    <div className="max-w-2xl mx-auto py-6 px-4 flex flex-col items-center justify-center h-full">
       {/* Hero */}
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-lg mb-5">
-          <MessageSquare className="w-8 h-8 text-white" />
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-lg mb-4">
+          <MessageSquare className="w-7 h-7 text-white" />
         </div>
 
         <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-3">
