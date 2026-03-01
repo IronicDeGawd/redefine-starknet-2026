@@ -10,6 +10,8 @@ import { validateOpenID } from "@/lib/connectors/steam";
 
 export const runtime = "nodejs";
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const searchParams = req.nextUrl.searchParams;
 
@@ -22,7 +24,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   // Check for OpenID mode
   if (!params["openid.mode"]) {
     return NextResponse.redirect(
-      new URL("/connect?error=invalid_openid_response", req.url)
+      new URL(`${BASE_PATH}/connect?error=invalid_openid_response`, req.url)
     );
   }
 
@@ -32,13 +34,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     if (!steamId) {
       return NextResponse.redirect(
-        new URL("/connect?error=steam_validation_failed", req.url)
+        new URL(`${BASE_PATH}/connect?error=steam_validation_failed`, req.url)
       );
     }
 
     // Store verified steamId in HttpOnly cookie
     const response = NextResponse.redirect(
-      new URL(`/connect?steam_success=true`, req.url)
+      new URL(`${BASE_PATH}/connect?steam_success=true`, req.url)
     );
 
     response.cookies.set("steam_verified_id", steamId, {
@@ -53,7 +55,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const message = err instanceof Error ? err.message : "Steam OpenID failed";
     return NextResponse.redirect(
-      new URL(`/connect?error=${encodeURIComponent(message)}`, req.url)
+      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(message)}`, req.url)
     );
   }
 }

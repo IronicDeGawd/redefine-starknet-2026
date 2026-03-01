@@ -10,6 +10,8 @@ import { exchangeCode } from "@/lib/connectors/codeforces";
 
 export const runtime = "nodejs";
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get("code");
@@ -18,13 +20,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/connect?error=${encodeURIComponent(error)}`, req.url)
+      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(error)}`, req.url)
     );
   }
 
   if (!code) {
     return NextResponse.redirect(
-      new URL("/connect?error=missing_code", req.url)
+      new URL(`${BASE_PATH}/connect?error=missing_code`, req.url)
     );
   }
 
@@ -32,7 +34,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const stateCookie = req.cookies.get("cf_oauth_state")?.value;
   if (!stateParam || !stateCookie || stateParam !== stateCookie) {
     return NextResponse.redirect(
-      new URL("/connect?error=invalid_state", req.url)
+      new URL(`${BASE_PATH}/connect?error=invalid_state`, req.url)
     );
   }
 
@@ -43,7 +45,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(
-      new URL("/connect?error=codeforces_not_configured", req.url)
+      new URL(`${BASE_PATH}/connect?error=codeforces_not_configured`, req.url)
     );
   }
 
@@ -57,7 +59,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     // Store verified handle in HttpOnly cookie
     const response = NextResponse.redirect(
-      new URL(`/connect?codeforces_success=true`, req.url)
+      new URL(`${BASE_PATH}/connect?codeforces_success=true`, req.url)
     );
 
     response.cookies.set("cf_verified_handle", handle, {
@@ -83,7 +85,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const message = err instanceof Error ? err.message : "OIDC exchange failed";
     return NextResponse.redirect(
-      new URL(`/connect?error=${encodeURIComponent(message)}`, req.url)
+      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(message)}`, req.url)
     );
   }
 }

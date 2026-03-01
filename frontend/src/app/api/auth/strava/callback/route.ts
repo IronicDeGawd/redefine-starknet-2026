@@ -11,6 +11,8 @@ import { exchangeCode } from "@/lib/connectors/strava";
 
 export const runtime = "nodejs";
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get("code");
@@ -19,13 +21,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (error) {
     return NextResponse.redirect(
-      new URL(`/connect?error=${encodeURIComponent(error)}`, req.url)
+      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(error)}`, req.url)
     );
   }
 
   if (!code) {
     return NextResponse.redirect(
-      new URL("/connect?error=missing_code", req.url)
+      new URL(`${BASE_PATH}/connect?error=missing_code`, req.url)
     );
   }
 
@@ -33,7 +35,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const stateCookie = req.cookies.get("strava_oauth_state")?.value;
   if (!stateParam || !stateCookie || stateParam !== stateCookie) {
     return NextResponse.redirect(
-      new URL("/connect?error=invalid_state", req.url)
+      new URL(`${BASE_PATH}/connect?error=invalid_state`, req.url)
     );
   }
 
@@ -42,7 +44,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(
-      new URL("/connect?error=strava_not_configured", req.url)
+      new URL(`${BASE_PATH}/connect?error=strava_not_configured`, req.url)
     );
   }
 
@@ -51,7 +53,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
 
     // [1.2 FIX] Store token + athleteId in HttpOnly cookies, NOT in URL
     const response = NextResponse.redirect(
-      new URL(`/connect?strava_success=true`, req.url)
+      new URL(`${BASE_PATH}/connect?strava_success=true`, req.url)
     );
 
     response.cookies.set("strava_token", accessToken, {
@@ -78,7 +80,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   } catch (err) {
     const message = err instanceof Error ? err.message : "OAuth failed";
     return NextResponse.redirect(
-      new URL(`/connect?error=${encodeURIComponent(message)}`, req.url)
+      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(message)}`, req.url)
     );
   }
 }
