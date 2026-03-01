@@ -119,13 +119,18 @@ export function validateCredentialId(id: unknown): boolean {
   return isValidHex(id);
 }
 
+const VALID_CREDENTIAL_TYPES: Set<string> = new Set([
+  "btc_tier", "wallet_age", "eth_holder", "github_dev",
+  "codeforces_coder", "steam_gamer", "strava_athlete",
+]);
+
 /**
  * Check if a value is a valid credential type
  */
 export function isValidCredentialType(
   value: unknown
 ): value is CredentialType {
-  return value === "btc_tier" || value === "wallet_age";
+  return typeof value === "string" && VALID_CREDENTIAL_TYPES.has(value);
 }
 
 /**
