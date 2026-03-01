@@ -240,7 +240,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
         transactionHash?: string;
     } | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [expanded, setExpanded] = useState(false);
+    const [expanded, setExpanded] = useState(true);
     const [ethAddress, setEthAddress] = useState<string | null>(null);
     const [btcConnected, setBtcConnected] = useState<{ address: string; pubkey: string } | null>(null);
 
@@ -443,11 +443,9 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     return (
         <Card
             className={cn(
-                "p-5 transition-all duration-200 cursor-pointer border",
+                "p-5 transition-all duration-200 border",
                 connector.borderColor,
-                expanded ? "ring-1 ring-[var(--accent-primary)]" : "hover:border-[var(--border-medium)]"
             )}
-            onClick={() => !expanded && connector.available && setExpanded(true)}
         >
             {/* Header */}
             <div className="flex items-start justify-between mb-3">

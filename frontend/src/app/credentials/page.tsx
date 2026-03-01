@@ -57,7 +57,7 @@ export default function CredentialsPage() {
               {credentials.length} credential{credentials.length !== 1 ? "s" : ""} issued
             </p>
           </div>
-          <Link href="/">
+          <Link href="/connect">
             <Button>
               <Plus className="w-4 h-4" />
               New Credential
@@ -159,7 +159,7 @@ function EmptyState({
               Clear Filter
             </Button>
           )}
-          <Link href="/">
+          <Link href="/connect">
             <Button>
               <Plus className="w-4 h-4" />
               Create Credential
