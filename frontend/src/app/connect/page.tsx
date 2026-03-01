@@ -57,7 +57,9 @@ const CONNECTORS: ConnectorConfig[] = [
             { name: "Fish", emoji: "🐟", description: "10-100 BTC" },
             { name: "Whale", emoji: "🐋", description: "100+ BTC" },
         ],
-        inputType: "wallet",
+        inputType: "address",
+        inputPlaceholder: "Enter BTC address (bc1... or 1...)",
+        inputLabel: "Bitcoin Address",
         apiEndpoint: "/api/credential/verified",
         available: true,
     },
@@ -360,6 +362,10 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
         try {
             const body: Record<string, string> = {};
             if (connector.id === "steam") body.steamId = input.trim();
+            if (connector.id === "bitcoin") {
+                body.btcAddress = input.trim();
+                body.credentialType = "btc_tier";
+            }
 
             const res = await fetch(`${BASE_PATH}${connector.apiEndpoint}`, {
                 method: "POST",
@@ -436,8 +442,8 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             {/* Expanded: Input Form */}
             {expanded && connector.available && status !== "success" && (
                 <div className="mt-4 pt-4 border-t border-[var(--border-light)]" onClick={(e) => e.stopPropagation()}>
-                    {/* Username/Address input connectors */}
-                    {connector.inputType === "username" && (
+                    {/* Address / Username input connectors */}
+                    {(connector.inputType === "username" || connector.inputType === "address") && (
                         <>
                             <label className="text-sm font-medium text-[var(--text-secondary)] mb-1.5 block">
                                 {connector.inputLabel}
