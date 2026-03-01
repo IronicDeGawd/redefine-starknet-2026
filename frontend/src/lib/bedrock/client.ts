@@ -16,9 +16,8 @@ let clientInstance: BedrockRuntimeClient | null = null;
  */
 export function getBedrockClient(): BedrockRuntimeClient {
   if (!clientInstance) {
-    const region = process.env.AWS_REGION || "us-east-1";
+    const region = process.env.AWS_REGION || "ap-south-1";
 
-    // Check for required credentials
     if (!process.env.AWS_ACCESS_KEY_ID || !process.env.AWS_SECRET_ACCESS_KEY) {
       throw new Error(
         "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY must be set"
@@ -37,9 +36,11 @@ export function getBedrockClient(): BedrockRuntimeClient {
 }
 
 /**
- * Model ID for Claude Sonnet on Bedrock
+ * Model ID — configurable via env, defaults to Claude Haiku 4.5 (global inference)
  */
-export const MODEL_ID = "anthropic.claude-3-sonnet-20240229-v1:0";
+export const MODEL_ID =
+  process.env.LLM_BEDROCK_MODEL_ID ||
+  "global.anthropic.claude-haiku-4-5-20251001-v1:0";
 
 /**
  * Invoke the Bedrock model with the Converse API
