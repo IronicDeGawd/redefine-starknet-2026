@@ -30,17 +30,26 @@ export interface ConnectBtcWalletInput {
   // No inputs required
 }
 
+export interface ConnectEthWalletInput {
+  // No inputs required
+}
+
+export interface StartOAuthInput {
+  platform: "github" | "codeforces" | "steam" | "strava";
+}
+
 export interface RequestSignatureInput {
-  credentialType: CredentialType;
-  tier: Tier;
+  credentialType: "btc_tier" | "wallet_age" | "eth_holder";
+  tier?: Tier;
 }
 
 export interface IssueCredentialInput {
-  btcPubkey: string;
-  signature: string;
-  message: string;
   credentialType: CredentialType;
-  tier: Tier;
+  walletAddress?: string;
+  publicKey?: string;
+  signature?: string;
+  message?: string;
+  tier?: Tier;
 }
 
 export interface VerifyCredentialInput {
@@ -51,12 +60,29 @@ export interface ConnectStarknetWalletInput {
   // No inputs required
 }
 
+export interface MintBadgeNftInput {
+  credentialType: CredentialType;
+  tier: Tier;
+}
+
 // ============ Tool Output Schemas ============
 
 export interface ConnectBtcWalletOutput {
   success: boolean;
   address?: string;
   publicKey?: string;
+  error?: string;
+}
+
+export interface ConnectEthWalletOutput {
+  success: boolean;
+  address?: string;
+  error?: string;
+}
+
+export interface StartOAuthOutput {
+  success: boolean;
+  redirectUrl?: string;
   error?: string;
 }
 
@@ -72,6 +98,8 @@ export interface IssueCredentialOutput {
   success: boolean;
   credentialId?: string;
   transactionHash?: string;
+  tier?: number;
+  tierName?: string;
   error?: string;
 }
 
@@ -94,23 +122,39 @@ export interface ConnectStarknetWalletOutput {
   error?: string;
 }
 
+export interface MintBadgeNftOutput {
+  success: boolean;
+  tokenId?: string;
+  transactionHash?: string;
+  error?: string;
+}
+
 export type ToolName =
   | "connect_btc_wallet"
+  | "connect_eth_wallet"
+  | "start_oauth"
   | "request_signature"
   | "issue_credential"
   | "verify_credential"
-  | "connect_starknet_wallet";
+  | "connect_starknet_wallet"
+  | "mint_badge_nft";
 
 export type ToolInput =
   | ConnectBtcWalletInput
+  | ConnectEthWalletInput
+  | StartOAuthInput
   | RequestSignatureInput
   | IssueCredentialInput
   | VerifyCredentialInput
-  | ConnectStarknetWalletInput;
+  | ConnectStarknetWalletInput
+  | MintBadgeNftInput;
 
 export type ToolOutput =
   | ConnectBtcWalletOutput
+  | ConnectEthWalletOutput
+  | StartOAuthOutput
   | RequestSignatureOutput
   | IssueCredentialOutput
   | VerifyCredentialOutput
-  | ConnectStarknetWalletOutput;
+  | ConnectStarknetWalletOutput
+  | MintBadgeNftOutput;
