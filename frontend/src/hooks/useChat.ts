@@ -43,7 +43,7 @@ export function useChat() {
           apiMessages.push({ role: "user", content });
         }
 
-        const response = await fetch("/api/chat", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

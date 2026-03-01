@@ -1,5 +1,7 @@
 "use client";
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
@@ -279,7 +281,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 params: [message, ethAddress],
             })) as string;
 
-            const res = await fetch(connector.apiEndpoint, {
+            const res = await fetch(`${BASE_PATH}${connector.apiEndpoint}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ ethAddress, signature, message }),
@@ -307,7 +309,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             }
             const state = Math.random().toString(36).slice(2);
             document.cookie = `cf_oauth_state=${state};path=/;max-age=300;samesite=strict`;
-            const redirectUri = `${window.location.origin}/api/auth/codeforces/callback`;
+            const redirectUri = `${window.location.origin}${BASE_PATH}/api/auth/codeforces/callback`;
             window.location.href = `https://codeforces.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid&state=${state}`;
         } else if (provider === "github") {
             const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
@@ -317,7 +319,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             }
             const state = Math.random().toString(36).slice(2);
             document.cookie = `gh_oauth_state=${state};path=/;max-age=300;samesite=strict`;
-            const redirectUri = `${window.location.origin}/api/auth/github/callback`;
+            const redirectUri = `${window.location.origin}${BASE_PATH}/api/auth/github/callback`;
             window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user&state=${state}`;
         }
     };
@@ -329,7 +331,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             setError(null);
             setResult(null);
             try {
-                const res = await fetch(connector.apiEndpoint, {
+                const res = await fetch(`${BASE_PATH}${connector.apiEndpoint}`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({}),
@@ -359,7 +361,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             const body: Record<string, string> = {};
             if (connector.id === "steam") body.steamId = input.trim();
 
-            const res = await fetch(connector.apiEndpoint, {
+            const res = await fetch(`${BASE_PATH}${connector.apiEndpoint}`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(body),

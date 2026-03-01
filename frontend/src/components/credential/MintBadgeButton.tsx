@@ -37,7 +37,7 @@ export function MintBadgeButton({ credential, onMinted }: MintBadgeButtonProps) 
     setError(null);
 
     try {
-      const res = await fetch("/api/nft/mint", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/nft/mint`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

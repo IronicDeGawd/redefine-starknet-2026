@@ -22,7 +22,7 @@ export function useCredential() {
       setIsIssuing(true);
 
       try {
-        const response = await fetch("/api/credential", {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/credential`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(params),
@@ -62,7 +62,7 @@ export function useCredential() {
       setIsVerifying(true);
 
       try {
-        const response = await fetch(`/api/verify?id=${encodeURIComponent(credentialId)}`);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/verify?id=${encodeURIComponent(credentialId)}`);
         const data: VerifyCredentialResponse = await response.json();
         return data;
       } catch (error) {

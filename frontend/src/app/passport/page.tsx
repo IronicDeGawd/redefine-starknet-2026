@@ -61,7 +61,7 @@ export default function PassportPage() {
     setSearched(true);
 
     try {
-      const res = await fetch(`/api/credential/${encodeURIComponent(trimmed)}`);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/credential/${encodeURIComponent(trimmed)}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         setError(body.error?.message || `Credential not found (${res.status})`);

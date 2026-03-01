@@ -183,7 +183,7 @@ export default function LoungePage() {
     setUserTier(null);
 
     try {
-      const res = await fetch(`/api/v1/credentials/${encodeURIComponent(trimmedId)}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/v1/credentials/${encodeURIComponent(trimmedId)}`, {
         headers: {
           "X-API-Key": "zkcred_demo_playground_key",
         },
