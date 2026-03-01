@@ -41,7 +41,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const clientId = process.env.CODEFORCES_CLIENT_ID;
   const clientSecret = process.env.CODEFORCES_CLIENT_SECRET;
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-  const redirectUri = `${appUrl}/api/auth/codeforces/callback`;
+  const redirectUri = `${appUrl}${BASE_PATH}/api/auth/codeforces/callback`;
 
   if (!clientId || !clientSecret) {
     return NextResponse.redirect(
