@@ -3,17 +3,12 @@
  *
  * Starts automatically when DISCORD_TOKEN is set.
  * Registers /verify slash command and assigns tier-based roles.
+ *
+ * discord.js is imported dynamically (inside startDiscordBot) to prevent
+ * Turbopack from tracing and mangling the module name at bundle time.
+ * Without this, the production server crash-loops with
+ * "Cannot find module 'discord.js-<hash>'" even when the bot is disabled.
  */
-
-import {
-  Client,
-  GatewayIntentBits,
-  EmbedBuilder,
-  REST,
-  Routes,
-  SlashCommandBuilder,
-  type ChatInputCommandInteraction,
-} from "discord.js";
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -61,121 +56,7 @@ function getRoleInfo(credentialType: string, tier: number): { name: string; emoj
 let botStarted = false;
 
 // ---------------------------------------------------------------------------
-// Command registration
-// ---------------------------------------------------------------------------
-
-async function registerCommands() {
-  if (!DISCORD_TOKEN || !DISCORD_CLIENT_ID) return;
-
-  const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
-  const commands = [
-    new SlashCommandBuilder()
-      .setName("verify")
-      .setDescription("Verify a ZKCred credential and receive your tier role")
-      .addStringOption((opt) =>
-        opt
-          .setName("credential_id")
-          .setDescription("Your ZKCred credential ID (0x...)")
-          .setRequired(true)
-      ),
-  ].map((cmd) => cmd.toJSON());
-
-  await rest.put(Routes.applicationCommands(DISCORD_CLIENT_ID), { body: commands });
-  console.log("[Discord Bot] Slash commands registered");
-}
-
-// ---------------------------------------------------------------------------
-// Verify handler
-// ---------------------------------------------------------------------------
-
-async function handleVerify(interaction: ChatInputCommandInteraction) {
-  const credentialId = interaction.options.getString("credential_id", true);
-  await interaction.deferReply();
-
-  try {
-    const res = await fetch(
-      `${ZKCRED_API_URL}/api/v1/credentials/${credentialId}/verify`,
-      {
-        method: "POST",
-        headers: {
-          "X-API-Key": ZKCRED_API_KEY,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const data = await res.json();
-
-    if (!data.valid) {
-      const reason =
-        data.reason === "not_found"
-          ? "Credential not found"
-          : data.reason === "revoked"
-            ? "Credential has been revoked"
-            : "Verification failed";
-
-      const embed = new EmbedBuilder()
-        .setTitle("Verification Failed")
-        .setDescription(reason)
-        .setColor(0xef4444);
-
-      await interaction.editReply({ embeds: [embed] });
-      return;
-    }
-
-    // Get type-aware role info
-    const roleInfo = getRoleInfo(data.credential.type, data.credential.tier);
-
-    const member = interaction.guild?.members.cache.get(interaction.user.id) ??
-      (await interaction.guild?.members.fetch(interaction.user.id));
-
-    if (member && interaction.guild) {
-      // Remove existing roles for this credential type
-      const config = CREDENTIAL_TIERS[data.credential.type];
-      const typeLabel = config?.label ?? data.credential.type;
-      const rolesToRemove = member.roles.cache.filter((r) =>
-        r.name.startsWith(`${typeLabel}: `)
-      );
-      for (const [, role] of rolesToRemove) {
-        await member.roles.remove(role);
-      }
-
-      // Find or create the tier role
-      let targetRole = interaction.guild.roles.cache.find(
-        (r) => r.name === roleInfo.name
-      );
-      if (!targetRole) {
-        targetRole = await interaction.guild.roles.create({
-          name: roleInfo.name,
-          color: roleInfo.color,
-          reason: "ZKCred tier role",
-        });
-      }
-
-      await member.roles.add(targetRole);
-    }
-
-    const embed = new EmbedBuilder()
-      .setTitle(`${roleInfo.emoji} Credential Verified!`)
-      .setDescription(`Welcome to **${roleInfo.name}**`)
-      .addFields(
-        { name: "Type", value: data.credential.tierName ?? data.credential.type, inline: true },
-        { name: "Tier", value: `${roleInfo.emoji} ${roleInfo.name}`, inline: true },
-        { name: "Status", value: data.credential.status, inline: true }
-      )
-      .setColor(roleInfo.color);
-
-    await interaction.editReply({ embeds: [embed] });
-  } catch (err) {
-    console.error("[Discord Bot] Verify error:", err);
-    await interaction.editReply({
-      content: "An error occurred while verifying. Please try again.",
-    });
-  }
-}
-
-// ---------------------------------------------------------------------------
-// Boot
+// Boot — all discord.js usage is inside this function behind dynamic import
 // ---------------------------------------------------------------------------
 
 export async function startDiscordBot() {
@@ -188,8 +69,120 @@ export async function startDiscordBot() {
   botStarted = true;
 
   try {
-    await registerCommands();
+    // Dynamic import — only loaded when the bot is actually starting
+    const {
+      Client,
+      GatewayIntentBits,
+      EmbedBuilder,
+      REST,
+      Routes,
+      SlashCommandBuilder,
+    } = await import("discord.js");
 
+    // ----- Register slash commands -----
+    if (DISCORD_CLIENT_ID) {
+      const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
+      const commands = [
+        new SlashCommandBuilder()
+          .setName("verify")
+          .setDescription("Verify a ZKCred credential and receive your tier role")
+          .addStringOption((opt) =>
+            opt
+              .setName("credential_id")
+              .setDescription("Your ZKCred credential ID (0x...)")
+              .setRequired(true)
+          ),
+      ].map((cmd) => cmd.toJSON());
+
+      await rest.put(Routes.applicationCommands(DISCORD_CLIENT_ID), { body: commands });
+      console.log("[Discord Bot] Slash commands registered");
+    }
+
+    // ----- Verify handler -----
+    async function handleVerify(interaction: import("discord.js").ChatInputCommandInteraction) {
+      const credentialId = interaction.options.getString("credential_id", true);
+      await interaction.deferReply();
+
+      try {
+        const res = await fetch(
+          `${ZKCRED_API_URL}/api/v1/credentials/${credentialId}/verify`,
+          {
+            method: "POST",
+            headers: {
+              "X-API-Key": ZKCRED_API_KEY,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const data = await res.json();
+
+        if (!data.valid) {
+          const reason =
+            data.reason === "not_found"
+              ? "Credential not found"
+              : data.reason === "revoked"
+                ? "Credential has been revoked"
+                : "Verification failed";
+
+          const embed = new EmbedBuilder()
+            .setTitle("Verification Failed")
+            .setDescription(reason)
+            .setColor(0xef4444);
+
+          await interaction.editReply({ embeds: [embed] });
+          return;
+        }
+
+        const roleInfo = getRoleInfo(data.credential.type, data.credential.tier);
+
+        const member = interaction.guild?.members.cache.get(interaction.user.id) ??
+          (await interaction.guild?.members.fetch(interaction.user.id));
+
+        if (member && interaction.guild) {
+          const config = CREDENTIAL_TIERS[data.credential.type];
+          const typeLabel = config?.label ?? data.credential.type;
+          const rolesToRemove = member.roles.cache.filter((r) =>
+            r.name.startsWith(`${typeLabel}: `)
+          );
+          for (const [, role] of rolesToRemove) {
+            await member.roles.remove(role);
+          }
+
+          let targetRole = interaction.guild.roles.cache.find(
+            (r) => r.name === roleInfo.name
+          );
+          if (!targetRole) {
+            targetRole = await interaction.guild.roles.create({
+              name: roleInfo.name,
+              color: roleInfo.color,
+              reason: "ZKCred tier role",
+            });
+          }
+
+          await member.roles.add(targetRole);
+        }
+
+        const embed = new EmbedBuilder()
+          .setTitle(`${roleInfo.emoji} Credential Verified!`)
+          .setDescription(`Welcome to **${roleInfo.name}**`)
+          .addFields(
+            { name: "Type", value: data.credential.tierName ?? data.credential.type, inline: true },
+            { name: "Tier", value: `${roleInfo.emoji} ${roleInfo.name}`, inline: true },
+            { name: "Status", value: data.credential.status, inline: true }
+          )
+          .setColor(roleInfo.color);
+
+        await interaction.editReply({ embeds: [embed] });
+      } catch (err) {
+        console.error("[Discord Bot] Verify error:", err);
+        await interaction.editReply({
+          content: "An error occurred while verifying. Please try again.",
+        });
+      }
+    }
+
+    // ----- Start client -----
     const client = new Client({
       intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers],
     });
