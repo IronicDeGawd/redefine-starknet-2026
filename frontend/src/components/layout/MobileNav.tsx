@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { Home, BadgeCheck, Shield, Settings } from "lucide-react";
+import { MessageSquare, BadgeCheck, Shield, Settings } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/", label: "Chat", icon: MessageSquare },
   { href: "/credentials", label: "Creds", icon: BadgeCheck },
   { href: "/verify", label: "Verify", icon: Shield },
   { href: "/settings", label: "Settings", icon: Settings },

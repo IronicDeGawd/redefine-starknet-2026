@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import {
-  Home,
+  MessageSquare,
   BadgeCheck,
   Shield,
   Settings,
@@ -20,7 +20,7 @@ import {
 
 const navItems = [
   { href: "/connect", label: "Connect", icon: Plug },
-  { href: "/", label: "Dashboard", icon: Home },
+  { href: "/", label: "Chat", icon: MessageSquare },
   { href: "/credentials", label: "Credentials", icon: BadgeCheck },
   { href: "/passport", label: "Passport", icon: Fingerprint },
   { href: "/verify", label: "Verify", icon: Shield },
