@@ -12,6 +12,12 @@ import { exchangeCode } from "@/lib/connectors/strava";
 export const runtime = "nodejs";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
+
+function connectRedirect(query: string, req: NextRequest): NextResponse {
+  const base = APP_URL || req.url;
+  return NextResponse.redirect(new URL(`${BASE_PATH}/connect?${query}`, base));
+}
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const searchParams = req.nextUrl.searchParams;
@@ -20,41 +26,31 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const stateParam = searchParams.get("state");
 
   if (error) {
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(error)}`, req.url)
-    );
+    return connectRedirect(`error=${encodeURIComponent(error)}`, req);
   }
 
   if (!code) {
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=missing_code`, req.url)
-    );
+    return connectRedirect("error=missing_code", req);
   }
 
   // [1.3 FIX] Validate CSRF state
   const stateCookie = req.cookies.get("strava_oauth_state")?.value;
   if (!stateParam || !stateCookie || stateParam !== stateCookie) {
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=invalid_state`, req.url)
-    );
+    return connectRedirect("error=invalid_state", req);
   }
 
   const clientId = process.env.STRAVA_CLIENT_ID;
   const clientSecret = process.env.STRAVA_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=strava_not_configured`, req.url)
-    );
+    return connectRedirect("error=strava_not_configured", req);
   }
 
   try {
     const { accessToken, athleteId } = await exchangeCode(code, clientId, clientSecret);
 
     // [1.2 FIX] Store token + athleteId in HttpOnly cookies, NOT in URL
-    const response = NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?strava_success=true`, req.url)
-    );
+    const response = connectRedirect("strava_success=true", req);
 
     response.cookies.set("strava_token", accessToken, {
       httpOnly: true,
@@ -79,8 +75,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "OAuth failed";
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(message)}`, req.url)
-    );
+    return connectRedirect(`error=${encodeURIComponent(message)}`, req);
   }
 }

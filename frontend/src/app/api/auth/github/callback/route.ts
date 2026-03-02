@@ -10,6 +10,12 @@ import { exchangeCode } from "@/lib/connectors/github";
 export const runtime = "nodejs";
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
+
+function connectRedirect(query: string, req: NextRequest): NextResponse {
+  const base = APP_URL || req.url;
+  return NextResponse.redirect(new URL(`${BASE_PATH}/connect?${query}`, base));
+}
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const searchParams = req.nextUrl.searchParams;
@@ -17,42 +23,32 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const error = searchParams.get("error");
 
   if (error) {
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(error)}`, req.url)
-    );
+    return connectRedirect(`error=${encodeURIComponent(error)}`, req);
   }
 
   if (!code) {
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=missing_code`, req.url)
-    );
+    return connectRedirect("error=missing_code", req);
   }
 
   // Validate CSRF state
   const stateParam = searchParams.get("state");
   const stateCookie = req.cookies.get("gh_oauth_state")?.value;
   if (!stateParam || !stateCookie || stateParam !== stateCookie) {
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=invalid_state`, req.url)
-    );
+    return connectRedirect("error=invalid_state", req);
   }
 
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=github_not_configured`, req.url)
-    );
+    return connectRedirect("error=github_not_configured", req);
   }
 
   try {
     const accessToken = await exchangeCode(code, clientId, clientSecret);
 
     // Store token in HttpOnly cookie (not in URL)
-    const response = NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?github_success=true`, req.url)
-    );
+    const response = connectRedirect("github_success=true", req);
     response.cookies.set("gh_verified_token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -64,8 +60,6 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
     return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "OAuth failed";
-    return NextResponse.redirect(
-      new URL(`${BASE_PATH}/connect?error=${encodeURIComponent(message)}`, req.url)
-    );
+    return connectRedirect(`error=${encodeURIComponent(message)}`, req);
   }
 }
