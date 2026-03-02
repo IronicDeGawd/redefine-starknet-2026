@@ -1,10 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { cn } from "@/lib/cn";
 import { getBadgeInfo } from "@/lib/badges/config";
 import { TierIcon } from "./TierBadge";
 import type { CredentialType, Tier } from "@/types/credential";
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 interface PixelBadgeProps {
   credentialType: CredentialType;
@@ -40,11 +43,12 @@ export function PixelBadge({ credentialType, tier, size = "md", className }: Pix
           style={{ width: px, height: px }}
         />
       )}
-      <img
-        src={info.image}
+      <Image
+        src={`${BASE_PATH}${info.image}`}
         alt={`${info.name} badge`}
         width={px}
         height={px}
+        unoptimized
         className={cn(
           "rounded-xl",
           !loaded && "opacity-0",

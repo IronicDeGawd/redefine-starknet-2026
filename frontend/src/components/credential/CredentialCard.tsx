@@ -10,6 +10,8 @@ import type { Credential, Tier } from "@/types/credential";
 import { CREDENTIAL_CONFIG, getBadgeInfo } from "@/lib/badges/config";
 import { Copy, ExternalLink, Share2, Trash2, Check, Shield, CheckCircle2 } from "lucide-react";
 
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
 interface CredentialCardProps {
   credential: Credential;
   variant?: "compact" | "full";
@@ -36,7 +38,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke, onMi
   };
 
   const shareCredential = async () => {
-    const url = `${window.location.origin}/verify?id=${credential.id}`;
+    const url = `${window.location.origin}${BASE_PATH}/verify?id=${credential.id}`;
     if (navigator.share) {
       await navigator.share({
         title: `ZKCred ${tierInfo.name} Credential`,

@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 const BOT_CODE = `const { Client, GatewayIntentBits, EmbedBuilder, SlashCommandBuilder, REST, Routes } = require("discord.js");
 
@@ -469,18 +472,12 @@ export default function DiscordBotPage() {
             }}
           >
             {/* The actual image (hidden until the GIF exists) */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/discord-bot-demo.gif"
+            <Image
+              src={`${BASE_PATH}/discord-bot-demo.gif`}
               alt="Discord bot demo showing the /verify command flow"
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                objectFit: "contain",
-              }}
+              fill
+              unoptimized
+              style={{ objectFit: "contain" }}
               onError={(e) => {
                 // Hide the image if it doesn't exist yet
                 (e.target as HTMLImageElement).style.display = "none";
