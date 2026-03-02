@@ -21,7 +21,9 @@ import {
     Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { useAppStore } from "@/stores/useAppStore";
 import { useBtcWallet } from "@/hooks/useBtcWallet";
+import type { CredentialType, Tier } from "@/types/credential";
 import { getOpenIDUrl } from "@/lib/connectors/steam";
 
 type ConnectorStatus = "idle" | "connecting" | "verifying" | "success" | "error";
@@ -232,15 +234,18 @@ export default function ConnectPage() {
 function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     const searchParams = useSearchParams();
     const btcWallet = useBtcWallet();
+    const globalBtcState = useAppStore((s) => s.btcWallet);
+    const addCredential = useAppStore((s) => s.addCredential);
+    const existingCredentials = useAppStore((s) => s.credentials);
     const [status, setStatus] = useState<ConnectorStatus>("idle");
     const [input, setInput] = useState("");
     const [result, setResult] = useState<{
         tier: number;
         tierName: string;
         transactionHash?: string;
+        credentialId?: string;
     } | null>(null);
     const [error, setError] = useState<string | null>(null);
-    const [expanded, setExpanded] = useState(true);
     const [ethAddress, setEthAddress] = useState<string | null>(null);
     const [btcConnected, setBtcConnected] = useState<{ address: string; pubkey: string } | null>(null);
 
@@ -249,9 +254,29 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
         (connector.id === "codeforces" && searchParams.get("codeforces_success") === "true") ||
         (connector.id === "github" && searchParams.get("github_success") === "true") ||
         (connector.id === "steam" && searchParams.get("steam_success") === "true");
+    const [expanded, setExpanded] = useState(returnedFromOAuth || true);
+
+    const saveCredential = (data: { credentialId?: string; tier: number; tierName: string }) => {
+        if (!data.credentialId) return;
+        const credType = connector.credentialType as CredentialType;
+        const alreadyExists = existingCredentials.some((c) => c.credentialType === credType);
+        if (alreadyExists) return;
+        addCredential({
+            id: data.credentialId,
+            pubkeyHash: "",
+            credentialType: credType,
+            tier: data.tier as Tier,
+            issuedAt: new Date().toISOString(),
+            revoked: false,
+        });
+    };
+
+    // Pre-fill BTC connection from global wallet state
     useEffect(() => {
-        if (returnedFromOAuth) setExpanded(true);
-    }, [returnedFromOAuth]);
+        if (connector.id === "bitcoin" && globalBtcState.status === "connected" && globalBtcState.address && globalBtcState.pubkey) {
+            setBtcConnected({ address: globalBtcState.address, pubkey: globalBtcState.pubkey });
+        }
+    }, [connector.id, globalBtcState.status, globalBtcState.address, globalBtcState.pubkey]);
 
     const handleEthConnect = async () => {
         if (typeof window === "undefined" || !window.ethereum) {
@@ -292,7 +317,8 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             const data = await res.json();
             if (data.success) {
                 setStatus("success");
-                setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash });
+                setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
+                saveCredential(data);
             } else {
                 setStatus("error");
                 setError(data.error || "Verification failed");
@@ -339,7 +365,8 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             const data = await res.json();
             if (data.success) {
                 setStatus("success");
-                setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash });
+                setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
+                saveCredential(data);
             } else {
                 setStatus("error");
                 setError(data.error || "Verification failed");
@@ -392,7 +419,8 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 const data = await res.json();
                 if (data.success) {
                     setStatus("success");
-                    setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash });
+                    setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
+                    saveCredential(data);
                 } else {
                     setStatus("error");
                     setError(data.error || "Verification failed");
@@ -427,7 +455,9 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     tier: data.tier,
                     tierName: data.tierName,
                     transactionHash: data.transactionHash,
+                    credentialId: data.credentialId,
                 });
+                saveCredential(data);
             } else {
                 setStatus("error");
                 setError(data.error || "Verification failed");
@@ -443,7 +473,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     return (
         <Card
             className={cn(
-                "p-5 transition-all duration-200 border",
+                "p-5 transition-all duration-200 border flex flex-col",
                 connector.borderColor,
             )}
         >
@@ -465,7 +495,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 {status === "success" && <CheckCircle className="w-5 h-5 text-green-400" />}
             </div>
 
-            <p className="text-sm text-[var(--text-muted)] mb-3">
+            <p className="text-sm text-[var(--text-muted)] mb-3 flex-1">
                 {connector.description}
             </p>
 
