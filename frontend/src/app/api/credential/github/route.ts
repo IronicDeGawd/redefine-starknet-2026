@@ -13,6 +13,7 @@ import {
 import {
   hashPubkey,
   generateRandomSalt,
+  generateCredentialId,
   stringToFelt,
   parseStarknetError,
   isDuplicateError,
@@ -81,12 +82,27 @@ export async function POST(
       verificationHashFelt, oracleProviderFelt, commitment
     );
 
-    await provider.waitForTransaction(tx.transaction_hash);
+    const receipt = await provider.waitForTransaction(tx.transaction_hash);
+
+    // Extract credential ID from CredentialIssued event
+    let credentialId: string | undefined;
+    const receiptWithEvents = receipt as { events?: Array<{ keys?: string[] }> };
+    if (receiptWithEvents.events?.length) {
+      const issuedEvent = receiptWithEvents.events.find((e) =>
+        e.keys?.some((k) => k.includes("CredentialIssued"))
+      );
+      if (issuedEvent?.keys && issuedEvent.keys.length > 1) {
+        credentialId = issuedEvent.keys[1];
+      }
+    }
+    if (!credentialId) {
+      credentialId = generateCredentialId(pubkeyHash, "github_dev", verification.tier, salt);
+    }
 
     // Clear the OAuth cookie after successful issuance
     const response = NextResponse.json({
       success: true,
-      credentialId: `${pubkeyHash.slice(0, 16)}`,
+      credentialId,
       transactionHash: tx.transaction_hash,
       tier: verification.tier,
       tierName: verification.tierName,

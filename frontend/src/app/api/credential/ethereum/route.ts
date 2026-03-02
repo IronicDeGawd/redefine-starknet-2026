@@ -15,6 +15,7 @@ import {
 import {
   hashPubkey,
   generateRandomSalt,
+  generateCredentialId,
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
@@ -173,13 +174,27 @@ export async function POST(
       commitment
     );
 
-    // 10. Wait for confirmation
-    await provider.waitForTransaction(tx.transaction_hash);
+    // 10. Wait for confirmation and extract credential ID
+    const receipt = await provider.waitForTransaction(tx.transaction_hash);
+
+    let credentialId: string | undefined;
+    const receiptWithEvents = receipt as { events?: Array<{ keys?: string[] }> };
+    if (receiptWithEvents.events?.length) {
+      const issuedEvent = receiptWithEvents.events.find((e) =>
+        e.keys?.some((k) => k.includes("CredentialIssued"))
+      );
+      if (issuedEvent?.keys && issuedEvent.keys.length > 1) {
+        credentialId = issuedEvent.keys[1];
+      }
+    }
+    if (!credentialId) {
+      credentialId = generateCredentialId(pubkeyHash, "eth_holder", verification.tier, salt);
+    }
 
     // 11. Return success
     return NextResponse.json({
       success: true,
-      credentialId: `${pubkeyHash.slice(0, 16)}`,
+      credentialId,
       transactionHash: tx.transaction_hash,
       tier: verification.tier,
       tierName: verification.tierName,
