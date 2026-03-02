@@ -2,7 +2,7 @@
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -25,6 +25,7 @@ import { useAppStore } from "@/stores/useAppStore";
 import { useBtcWallet } from "@/hooks/useBtcWallet";
 import type { CredentialType, Tier } from "@/types/credential";
 import { getOpenIDUrl } from "@/lib/connectors/steam";
+import { getAuthUrl as getStravaAuthUrl } from "@/lib/connectors/strava";
 
 type ConnectorStatus = "idle" | "connecting" | "verifying" | "success" | "error";
 
@@ -158,7 +159,7 @@ const CONNECTORS: ConnectorConfig[] = [
         ],
         inputType: "oauth",
         apiEndpoint: "/api/credential/strava",
-        available: false, // Stretch goal
+        available: true,
     },
 ];
 
@@ -247,14 +248,25 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     } | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [ethAddress, setEthAddress] = useState<string | null>(null);
-    const [btcConnected, setBtcConnected] = useState<{ address: string; pubkey: string } | null>(null);
+    const [localBtcConnected, setLocalBtcConnected] = useState<{ address: string; pubkey: string } | null>(null);
+
+    // Derive BTC connected state from local (connect button) or global (persisted wallet)
+    const btcConnected = localBtcConnected ?? (
+        connector.id === "bitcoin" && globalBtcState.status === "connected" && globalBtcState.address && globalBtcState.pubkey
+            ? { address: globalBtcState.address, pubkey: globalBtcState.pubkey }
+            : null
+    );
+
+    // Check if credential already exists in local store
+    const alreadyIssued = existingCredentials.some((c) => c.credentialType === connector.credentialType);
 
     // Auto-expand after OAuth callback redirect
     const returnedFromOAuth =
         (connector.id === "codeforces" && searchParams.get("codeforces_success") === "true") ||
         (connector.id === "github" && searchParams.get("github_success") === "true") ||
-        (connector.id === "steam" && searchParams.get("steam_success") === "true");
-    const [expanded, setExpanded] = useState(returnedFromOAuth || true);
+        (connector.id === "steam" && searchParams.get("steam_success") === "true") ||
+        (connector.id === "strava" && searchParams.get("strava_success") === "true");
+    const expanded = true;
 
     const saveCredential = (data: { credentialId?: string; tier: number; tierName: string }) => {
         if (!data.credentialId) return;
@@ -271,12 +283,16 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
         });
     };
 
-    // Pre-fill BTC connection from global wallet state
-    useEffect(() => {
-        if (connector.id === "bitcoin" && globalBtcState.status === "connected" && globalBtcState.address && globalBtcState.pubkey) {
-            setBtcConnected({ address: globalBtcState.address, pubkey: globalBtcState.pubkey });
+    const handleDuplicateRecovery = (status: number) => {
+        if (status === 409) {
+            const credType = connector.credentialType as CredentialType;
+            saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
+            setStatus("success");
+            setResult({ tier: -1, tierName: "Already issued" });
+            return true;
         }
-    }, [connector.id, globalBtcState.status, globalBtcState.address, globalBtcState.pubkey]);
+        return false;
+    };
 
     const handleEthConnect = async () => {
         if (typeof window === "undefined" || !window.ethereum) {
@@ -289,6 +305,22 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             const accounts = (await window.ethereum.request({ method: "eth_requestAccounts" })) as string[];
             if (accounts?.length) {
                 setEthAddress(accounts[0]);
+                // Check if credential already exists on-chain
+                try {
+                    const lookupRes = await fetch(`${BASE_PATH}/api/credential/lookup`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ identifier: accounts[0], credentialType: connector.credentialType }),
+                    });
+                    const lookupData = await lookupRes.json();
+                    if (lookupData.exists) {
+                        const credType = connector.credentialType as CredentialType;
+                        saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
+                        setStatus("success");
+                        setResult({ tier: -1, tierName: "Already issued" });
+                        return;
+                    }
+                } catch { /* lookup failed — continue with normal flow */ }
                 setStatus("idle");
             }
         } catch (err) {
@@ -319,7 +351,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 setStatus("success");
                 setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                 saveCredential(data);
-            } else {
+            } else if (!handleDuplicateRecovery(res.status)) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
             }
@@ -334,7 +366,23 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
         setError(null);
         try {
             const result = await btcWallet.connect();
-            setBtcConnected({ address: result.address, pubkey: result.pubkey });
+            setLocalBtcConnected({ address: result.address, pubkey: result.pubkey });
+            // Check if credential already exists on-chain
+            try {
+                const lookupRes = await fetch(`${BASE_PATH}/api/credential/lookup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ identifier: result.pubkey, credentialType: connector.credentialType }),
+                });
+                const lookupData = await lookupRes.json();
+                if (lookupData.exists) {
+                    const credType = connector.credentialType as CredentialType;
+                    saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
+                    setStatus("success");
+                    setResult({ tier: -1, tierName: "Already issued" });
+                    return;
+                }
+            } catch { /* lookup failed — continue with normal flow */ }
             setStatus("idle");
         } catch (err) {
             setStatus("error");
@@ -367,7 +415,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 setStatus("success");
                 setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                 saveCredential(data);
-            } else {
+            } else if (!handleDuplicateRecovery(res.status)) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
             }
@@ -385,7 +433,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 return;
             }
             const state = Math.random().toString(36).slice(2);
-            document.cookie = `cf_oauth_state=${state};path=/;max-age=300;samesite=strict`;
+            document.cookie = `cf_oauth_state=${state};path=/;max-age=300;samesite=lax`;
             const redirectUri = `${window.location.origin}${BASE_PATH}/api/auth/codeforces/callback`;
             window.location.href = `https://codeforces.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid&state=${state}`;
         } else if (provider === "github") {
@@ -395,12 +443,22 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 return;
             }
             const state = Math.random().toString(36).slice(2);
-            document.cookie = `gh_oauth_state=${state};path=/;max-age=300;samesite=strict`;
+            document.cookie = `gh_oauth_state=${state};path=/;max-age=300;samesite=lax`;
             const redirectUri = `${window.location.origin}${BASE_PATH}/api/auth/github/callback`;
             window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user&state=${state}`;
         } else if (provider === "steam") {
             const returnUrl = `${window.location.origin}${BASE_PATH}/api/auth/steam/callback`;
             window.location.href = getOpenIDUrl(returnUrl);
+        } else if (provider === "strava") {
+            const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
+            if (!clientId) {
+                setError("Strava OAuth not configured");
+                return;
+            }
+            const state = Math.random().toString(36).slice(2);
+            document.cookie = `strava_oauth_state=${state};path=/;max-age=300;samesite=lax`;
+            const redirectUri = `${window.location.origin}${BASE_PATH}/api/auth/strava/callback`;
+            window.location.href = getStravaAuthUrl(clientId, redirectUri, state);
         }
     };
 
@@ -421,7 +479,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     setStatus("success");
                     setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                     saveCredential(data);
-                } else {
+                } else if (!handleDuplicateRecovery(res.status)) {
                     setStatus("error");
                     setError(data.error || "Verification failed");
                 }
@@ -458,7 +516,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     credentialId: data.credentialId,
                 });
                 saveCredential(data);
-            } else {
+            } else if (!handleDuplicateRecovery(res.status)) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
             }
@@ -485,14 +543,9 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     </div>
                     <div>
                         <h3 className="font-semibold text-[var(--text-primary)]">{connector.name}</h3>
-                        {!connector.available && (
-                            <span className="text-xs px-2 py-0.5 bg-[var(--bg-secondary)] text-[var(--text-muted)] rounded-full">
-                                Coming Soon
-                            </span>
-                        )}
                     </div>
                 </div>
-                {status === "success" && <CheckCircle className="w-5 h-5 text-green-400" />}
+                {(status === "success" || alreadyIssued) && <CheckCircle className="w-5 h-5 text-green-400" />}
             </div>
 
             <p className="text-sm text-[var(--text-muted)] mb-3 flex-1">
@@ -513,8 +566,18 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 ))}
             </div>
 
+            {/* Already Issued State */}
+            {alreadyIssued && status !== "success" && (
+                <div className="mt-4 pt-4 border-t border-[var(--border-light)]">
+                    <div className="flex items-center gap-2 text-sm text-green-400">
+                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>Credential already issued</span>
+                    </div>
+                </div>
+            )}
+
             {/* Expanded: Input Form */}
-            {expanded && connector.available && status !== "success" && (
+            {expanded && connector.available && status !== "success" && !alreadyIssued && (
                 <div className="mt-4 pt-4 border-t border-[var(--border-light)]" onClick={(e) => e.stopPropagation()}>
                     {/* Address / Username input connectors */}
                     {(connector.inputType === "username" || connector.inputType === "address") && (
@@ -566,9 +629,6 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                                 </Button>
                             ) : (
                                 <>
-                                    <div className="text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)] rounded-lg px-3 py-2 font-mono truncate">
-                                        {btcConnected.address}
-                                    </div>
                                     <Button
                                         onClick={handleBtcVerify}
                                         disabled={status === "verifying"}
@@ -581,6 +641,9 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                                         )}
                                         Sign & Verify
                                     </Button>
+                                    <p className="text-xs text-[var(--text-muted)] font-mono truncate">
+                                        {btcConnected.address}
+                                    </p>
                                 </>
                             )}
                         </div>
@@ -604,9 +667,6 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                                 </Button>
                             ) : (
                                 <>
-                                    <div className="text-xs text-[var(--text-muted)] bg-[var(--bg-secondary)] rounded-lg px-3 py-2 font-mono truncate">
-                                        {ethAddress}
-                                    </div>
                                     <Button
                                         onClick={handleEthVerify}
                                         disabled={status === "verifying"}
@@ -619,6 +679,9 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                                         )}
                                         Sign & Verify
                                     </Button>
+                                    <p className="text-xs text-[var(--text-muted)] font-mono truncate">
+                                        {ethAddress}
+                                    </p>
                                 </>
                             )}
                         </div>
@@ -672,6 +735,21 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                                     </p>
                                 </>
                             )}
+                            {connector.id === "strava" && !returnedFromOAuth && (
+                                <>
+                                    <Button
+                                        onClick={() => handleOAuthRedirect("strava")}
+                                        disabled={status === "verifying"}
+                                        className="w-full"
+                                    >
+                                        <Activity className="w-4 h-4 mr-2" />
+                                        Login with Strava
+                                    </Button>
+                                    <p className="text-xs text-[var(--text-muted)]">
+                                        Redirects to Strava for OAuth authentication
+                                    </p>
+                                </>
+                            )}
                             {/* After returning from OAuth callback, show "Issue Credential" button */}
                             {returnedFromOAuth && (
                                 <Button
@@ -703,13 +781,20 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             {/* Success Result */}
             {status === "success" && result && (
                 <div className="mt-4 pt-4 border-t border-[var(--border-light)]">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm text-[var(--text-muted)]">Your tier:</span>
-                        <div className="flex items-center gap-2">
-                            <span className="text-lg">{connector.tiers[result.tier]?.emoji}</span>
-                            <span className="font-semibold text-[var(--text-primary)]">{result.tierName}</span>
+                    {result.tier >= 0 ? (
+                        <div className="flex items-center justify-between mb-2">
+                            <span className="text-sm text-[var(--text-muted)]">Your tier:</span>
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg">{connector.tiers[result.tier]?.emoji}</span>
+                                <span className="font-semibold text-[var(--text-primary)]">{result.tierName}</span>
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="flex items-center gap-2 text-sm text-green-400 mb-2">
+                            <CheckCircle className="w-4 h-4 flex-shrink-0" />
+                            <span>Credential already issued</span>
+                        </div>
+                    )}
                     {result.transactionHash && (
                         <a
                             href={`https://sepolia.starkscan.co/tx/${result.transactionHash}`}
@@ -723,13 +808,6 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 </div>
             )}
 
-            {/* CTA for non-expanded cards */}
-            {!expanded && connector.available && (
-                <Button variant="secondary" className="w-full mt-2">
-                    Connect
-                    <ArrowRight className="w-3.5 h-3.5 ml-1" />
-                </Button>
-            )}
         </Card>
     );
 }

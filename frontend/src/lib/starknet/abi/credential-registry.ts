@@ -58,7 +58,10 @@ export const CREDENTIAL_REGISTRY_ABI = [
       {
         type: "function",
         name: "is_issued",
-        inputs: [{ name: "pubkey_hash", type: "core::felt252" }],
+        inputs: [
+          { name: "pubkey_hash", type: "core::felt252" },
+          { name: "credential_type", type: "core::felt252" },
+        ],
         outputs: [{ type: "core::bool" }],
         state_mutability: "view",
       },

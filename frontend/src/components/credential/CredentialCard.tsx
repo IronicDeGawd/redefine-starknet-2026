@@ -29,7 +29,10 @@ const tierCardBg: Record<Tier, string> = {
 export function CredentialCard({ credential, variant = "compact", onRevoke, onMinted }: CredentialCardProps) {
   const [copied, setCopied] = useState(false);
   const config = CREDENTIAL_CONFIG[credential.credentialType];
-  const tierInfo = getBadgeInfo(credential.credentialType, credential.tier);
+  const isRecovered = credential.id.startsWith("recovered:");
+  const tierInfo = isRecovered
+    ? { name: "Issued", image: getBadgeInfo(credential.credentialType, 0).image }
+    : getBadgeInfo(credential.credentialType, credential.tier);
 
   const copyId = async () => {
     await navigator.clipboard.writeText(credential.id);
@@ -185,7 +188,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke, onMi
         {/* Details */}
         <div className="space-y-3 mb-6">
           <DetailRow label="Type" value={config.label} />
-          <DetailRow label="Tier" value={`${credential.tier} (${tierInfo.name})`} />
+          <DetailRow label="Tier" value={isRecovered ? "Recovered (tier unknown)" : `${credential.tier} (${tierInfo.name})`} />
           <DetailRow label="Issued" value={formatDate(credential.issuedAt)} />
           <DetailRow
             label="Status"
@@ -214,7 +217,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke, onMi
           </h4>
           <ul className="space-y-2">
             <ProofItem text={`Verified ${config.label} credential`} />
-            <ProofItem text={`Tier ${credential.tier} (${tierInfo.name}) achieved`} />
+            <ProofItem text={isRecovered ? "Credential recovered from chain" : `Tier ${credential.tier} (${tierInfo.name}) achieved`} />
             <ProofItem text="Credential issued on Starknet blockchain" />
           </ul>
         </div>
