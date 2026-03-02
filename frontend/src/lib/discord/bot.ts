@@ -20,14 +20,14 @@ const GUILD_ID = process.env.DISCORD_GUILD_ID;
 const ZKCRED_API_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 const ZKCRED_API_KEY = process.env.ZKCRED_DISCORD_API_KEY || "";
 
-/** Per-credential-type config for Discord roles */
+/** Per-credential-type config for Discord roles — must match CREDENTIAL_TIER_NAMES in credential.ts */
 const CREDENTIAL_TIERS: Record<string, { label: string; tiers: Record<number, string>; color: number }> = {
   btc_tier:         { label: "BTC",        tiers: { 0: "Shrimp", 1: "Crab", 2: "Fish", 3: "Whale" },       color: 0xf7931a },
   wallet_age:       { label: "Wallet Age", tiers: { 0: "Newbie", 1: "Veteran", 2: "Hodler", 3: "OG" },     color: 0x9ca3af },
-  eth_holder:       { label: "ETH",        tiers: { 0: "Dust", 1: "Shard", 2: "Diamond", 3: "Whale" },     color: 0x627eea },
+  eth_holder:       { label: "ETH",        tiers: { 0: "Dust", 1: "Holder", 2: "Stacker", 3: "Whale" },    color: 0x627eea },
   github_dev:       { label: "GitHub Dev", tiers: { 0: "Seedling", 1: "Hammer", 2: "Star", 3: "Trophy" },  color: 0x6e40c9 },
   codeforces_coder: { label: "Codeforces", tiers: { 0: "Newbie", 1: "Specialist", 2: "Expert", 3: "Master" }, color: 0x1f8dd6 },
-  steam_gamer:      { label: "Steam",      tiers: { 0: "Basic", 1: "Intermediate", 2: "Advanced", 3: "Elite" }, color: 0x1b2838 },
+  steam_gamer:      { label: "Steam",      tiers: { 0: "Casual", 1: "Gamer", 2: "Hardcore", 3: "Legend" }, color: 0x1b2838 },
   strava_athlete:   { label: "Strava",     tiers: { 0: "Sneaker", 1: "Runner", 2: "Mountain", 3: "Peak" }, color: 0xfc4c02 },
 };
 
@@ -38,6 +38,13 @@ const TIER_EMOJIS: Record<number, string> = {
   3: "\u{1F451}", // 👑
 };
 
+/** Lounge roles granted based on tier level (cumulative) */
+const LOUNGE_ROLES: { minTier: number; name: string; emoji: string; color: number }[] = [
+  { minTier: 0, name: "ZKCred Verified", emoji: "\u{2705}", color: 0x5b7fff },  // ✅
+  { minTier: 2, name: "Silver Lounge",   emoji: "\u{1FA99}", color: 0xc0c0c0 }, // 🪙
+  { minTier: 3, name: "Gold Lounge",     emoji: "\u{1F451}", color: 0xffd700 },  // 👑
+];
+
 function getRoleInfo(credentialType: string, tier: number): { name: string; emoji: string; color: number } {
   const config = CREDENTIAL_TIERS[credentialType];
   const tierName = config?.tiers[tier] ?? `Tier ${tier}`;
@@ -47,6 +54,10 @@ function getRoleInfo(credentialType: string, tier: number): { name: string; emoj
     emoji: TIER_EMOJIS[tier] ?? "\u{2728}",
     color: config?.color ?? 0x5b7fff,
   };
+}
+
+function getLoungeRoles(tier: number): typeof LOUNGE_ROLES {
+  return LOUNGE_ROLES.filter((l) => tier >= l.minTier);
 }
 
 // ---------------------------------------------------------------------------
@@ -139,7 +150,10 @@ export async function startDiscordBot() {
         const member = interaction.guild?.members.cache.get(interaction.user.id) ??
           (await interaction.guild?.members.fetch(interaction.user.id));
 
+        const assignedRoles: string[] = [roleInfo.name];
+
         if (member && interaction.guild) {
+          // Remove old tier roles for this credential type
           const config = CREDENTIAL_TIERS[data.credential.type];
           const typeLabel = config?.label ?? data.credential.type;
           const rolesToRemove = member.roles.cache.filter((r) =>
@@ -149,6 +163,7 @@ export async function startDiscordBot() {
             await member.roles.remove(role);
           }
 
+          // Assign tier-specific role (e.g. "BTC: Shrimp")
           let targetRole = interaction.guild.roles.cache.find(
             (r) => r.name === roleInfo.name
           );
@@ -159,17 +174,35 @@ export async function startDiscordBot() {
               reason: "ZKCred tier role",
             });
           }
-
           await member.roles.add(targetRole);
+
+          // Assign lounge access roles based on tier level
+          const loungeRoles = getLoungeRoles(data.credential.tier);
+          for (const lounge of loungeRoles) {
+            if (member.roles.cache.some((r) => r.name === lounge.name)) continue;
+            let loungeRole = interaction.guild.roles.cache.find(
+              (r) => r.name === lounge.name
+            );
+            if (!loungeRole) {
+              loungeRole = await interaction.guild.roles.create({
+                name: lounge.name,
+                color: lounge.color,
+                reason: "ZKCred lounge access",
+              });
+            }
+            await member.roles.add(loungeRole);
+            assignedRoles.push(lounge.name);
+          }
         }
 
         const embed = new EmbedBuilder()
           .setTitle(`${roleInfo.emoji} Credential Verified!`)
           .setDescription(`Welcome to **${roleInfo.name}**`)
           .addFields(
-            { name: "Type", value: data.credential.tierName ?? data.credential.type, inline: true },
-            { name: "Tier", value: `${roleInfo.emoji} ${roleInfo.name}`, inline: true },
-            { name: "Status", value: data.credential.status, inline: true }
+            { name: "Credential", value: data.credential.tierName ?? data.credential.type, inline: true },
+            { name: "Role", value: `${roleInfo.emoji} ${roleInfo.name}`, inline: true },
+            { name: "Status", value: data.credential.status, inline: true },
+            { name: "Roles Assigned", value: assignedRoles.map((r) => `\u2022 ${r}`).join("\n"), inline: false }
           )
           .setColor(roleInfo.color);
 
