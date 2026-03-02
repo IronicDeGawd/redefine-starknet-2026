@@ -2,7 +2,7 @@
 
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -21,6 +21,7 @@ import {
     Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
+import { toast } from "sonner";
 import { useAppStore } from "@/stores/useAppStore";
 import { useBtcWallet } from "@/hooks/useBtcWallet";
 import type { CredentialType, Tier } from "@/types/credential";
@@ -268,6 +269,13 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
         (connector.id === "strava" && searchParams.get("strava_success") === "true");
     const expanded = true;
 
+    useEffect(() => {
+        if (returnedFromOAuth) {
+            toast.success(`${connector.name} authenticated — click Issue Credential below`);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
     const saveCredential = (data: { credentialId?: string; tier: number; tierName: string }) => {
         if (!data.credentialId) return;
         const credType = connector.credentialType as CredentialType;
@@ -289,6 +297,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
             setStatus("success");
             setResult({ tier: -1, tierName: "Already issued" });
+            toast.info("Credential already issued — recovered from chain");
             return true;
         }
         return false;
@@ -318,9 +327,11 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                         saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
                         setStatus("success");
                         setResult({ tier: -1, tierName: "Already issued" });
+                        toast.info("Credential already issued for this wallet");
                         return;
                     }
                 } catch { /* lookup failed — continue with normal flow */ }
+                toast.success("Wallet connected — click Sign & Verify to issue credential");
                 setStatus("idle");
             }
         } catch (err) {
@@ -351,13 +362,16 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 setStatus("success");
                 setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                 saveCredential(data);
+                toast.success(`Credential issued! Tier: ${data.tierName}`);
             } else if (!handleDuplicateRecovery(res.status)) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
+                toast.error(data.error || "Verification failed");
             }
         } catch (err) {
             setStatus("error");
             setError(err instanceof Error ? err.message : "Signing failed");
+            toast.error("Signing failed");
         }
     };
 
@@ -380,13 +394,16 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
                     setStatus("success");
                     setResult({ tier: -1, tierName: "Already issued" });
+                    toast.info("Credential already issued for this wallet");
                     return;
                 }
             } catch { /* lookup failed — continue with normal flow */ }
+            toast.success("Wallet connected — click Sign & Verify to issue credential");
             setStatus("idle");
         } catch (err) {
             setStatus("error");
             setError(err instanceof Error ? err.message : "Wallet connection failed");
+            toast.error("Wallet connection failed");
         }
     };
 
@@ -415,13 +432,16 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 setStatus("success");
                 setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                 saveCredential(data);
+                toast.success(`Credential issued! Tier: ${data.tierName}`);
             } else if (!handleDuplicateRecovery(res.status)) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
+                toast.error(data.error || "Verification failed");
             }
         } catch (err) {
             setStatus("error");
             setError(err instanceof Error ? err.message : "Signing failed");
+            toast.error("Signing failed");
         }
     };
 
@@ -479,13 +499,16 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     setStatus("success");
                     setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                     saveCredential(data);
+                    toast.success(`Credential issued! Tier: ${data.tierName}`);
                 } else if (!handleDuplicateRecovery(res.status)) {
                     setStatus("error");
                     setError(data.error || "Verification failed");
+                    toast.error(data.error || "Verification failed");
                 }
             } catch (err) {
                 setStatus("error");
                 setError(err instanceof Error ? err.message : "Network error");
+                toast.error("Network error");
             }
             return;
         }
@@ -516,6 +539,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     credentialId: data.credentialId,
                 });
                 saveCredential(data);
+                toast.success(`Credential issued! Tier: ${data.tierName}`);
             } else if (!handleDuplicateRecovery(res.status)) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
@@ -755,13 +779,12 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                                 <Button
                                     onClick={handleSubmit}
                                     disabled={status === "verifying"}
-                                    className="w-full"
-                                    variant="secondary"
+                                    className="w-full animate-pulse"
                                 >
                                     {status === "verifying" ? (
                                         <Loader2 className="w-4 h-4 animate-spin mr-2" />
                                     ) : (
-                                        <CheckCircle className="w-4 h-4 mr-2" />
+                                        <Shield className="w-4 h-4 mr-2" />
                                     )}
                                     Issue Credential
                                 </Button>

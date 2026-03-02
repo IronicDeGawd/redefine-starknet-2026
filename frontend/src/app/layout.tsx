@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -52,6 +53,7 @@ export default function RootLayout({
     >
       <body className="antialiased bg-[var(--background-secondary)]">
         <AppShell>{children}</AppShell>
+        <Toaster position="bottom-right" richColors />
       </body>
     </html>
   );
