@@ -37,13 +37,13 @@ const CREDENTIAL_ICONS: Record<CredentialType, typeof Bitcoin> = {
 };
 
 const CREDENTIAL_COLORS: Record<CredentialType, { bg: string; text: string; border: string }> = {
-  btc_tier: { bg: "bg-amber-50", text: "text-amber-600", border: "border-amber-200" },
-  wallet_age: { bg: "bg-orange-50", text: "text-orange-600", border: "border-orange-200" },
-  eth_holder: { bg: "bg-blue-50", text: "text-blue-600", border: "border-blue-200" },
-  github_dev: { bg: "bg-violet-50", text: "text-violet-600", border: "border-violet-200" },
-  codeforces_coder: { bg: "bg-cyan-50", text: "text-cyan-600", border: "border-cyan-200" },
-  steam_gamer: { bg: "bg-slate-50", text: "text-slate-600", border: "border-slate-200" },
-  strava_athlete: { bg: "bg-rose-50", text: "text-rose-600", border: "border-rose-200" },
+  btc_tier: { bg: "bg-orange-500/10", text: "text-orange-400", border: "border-orange-500/20" },
+  wallet_age: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" },
+  eth_holder: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" },
+  github_dev: { bg: "bg-purple-500/10", text: "text-purple-400", border: "border-purple-500/20" },
+  codeforces_coder: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" },
+  steam_gamer: { bg: "bg-sky-500/10", text: "text-sky-400", border: "border-sky-500/20" },
+  strava_athlete: { bg: "bg-rose-500/10", text: "text-rose-400", border: "border-rose-500/20" },
 };
 
 const quickActions = [
@@ -52,32 +52,32 @@ const quickActions = [
     description: "Prove your identity with ZK proofs",
     href: "/connect",
     icon: Plug,
-    color: "bg-[var(--primary)]",
-    textColor: "text-white",
+    iconColor: "text-[var(--primary)]",
+    iconBg: "bg-[var(--primary-light)]",
   },
   {
     label: "Start Chat",
     description: "AI-guided credential creation",
     href: "/chat",
     icon: MessageSquare,
-    color: "bg-gradient-to-br from-violet-500 to-purple-600",
-    textColor: "text-white",
+    iconColor: "text-purple-400",
+    iconBg: "bg-purple-500/10",
   },
   {
     label: "View Passport",
     description: "Your reputation identity hub",
     href: "/passport",
     icon: Fingerprint,
-    color: "bg-gradient-to-br from-emerald-500 to-teal-600",
-    textColor: "text-white",
+    iconColor: "text-emerald-400",
+    iconBg: "bg-emerald-500/10",
   },
   {
     label: "Verify Someone",
     description: "Check any credential on-chain",
     href: "/verify",
     icon: Shield,
-    color: "bg-gradient-to-br from-amber-500 to-orange-600",
-    textColor: "text-white",
+    iconColor: "text-amber-400",
+    iconBg: "bg-amber-500/10",
   },
 ];
 
@@ -86,41 +86,41 @@ const features = [
     title: "Zero-Knowledge Proofs",
     description: "Prove facts about yourself without revealing raw data. Your holdings, age, and activity stay private.",
     icon: ShieldCheck,
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
+    iconColor: "text-emerald-400",
+    iconBg: "bg-emerald-500/10",
   },
   {
     title: "On-Chain Badges",
     description: "Mint soulbound NFT badges on Starknet as permanent proof of your verified credentials.",
     icon: Layers,
-    color: "text-violet-600",
-    bg: "bg-violet-50",
+    iconColor: "text-purple-400",
+    iconBg: "bg-purple-500/10",
   },
   {
     title: "Multi-Chain Identity",
     description: "Connect Bitcoin, Ethereum, and social accounts into a unified reputation passport.",
     icon: Globe,
-    color: "text-blue-600",
-    bg: "bg-blue-50",
+    iconColor: "text-blue-400",
+    iconBg: "bg-blue-500/10",
   },
   {
     title: "AI-Powered Agent",
     description: "Chat with our AI agent to create credentials, verify identities, and explore the platform.",
     icon: Sparkles,
-    color: "text-amber-600",
-    bg: "bg-amber-50",
+    iconColor: "text-amber-400",
+    iconBg: "bg-amber-500/10",
   },
 ];
 
 const explorePages = [
-  { href: "/chat", label: "Chat", description: "AI credential assistant", icon: MessageSquare, color: "text-violet-600" },
-  { href: "/connect", label: "Connect", description: "Link accounts & wallets", icon: Plug, color: "text-blue-600" },
-  { href: "/credentials", label: "Credentials", description: "View issued credentials", icon: BadgeCheck, color: "text-emerald-600" },
-  { href: "/verify", label: "Verify", description: "Check any credential", icon: Shield, color: "text-amber-600" },
-  { href: "/passport", label: "Passport", description: "Reputation identity hub", icon: Fingerprint, color: "text-rose-600" },
-  { href: "/crypto", label: "Cryptography", description: "Learn ZK primitives", icon: Lock, color: "text-cyan-600" },
-  { href: "/playground", label: "Playground", description: "Test ZK circuits", icon: FlaskConical, color: "text-purple-600" },
-  { href: "/lounge", label: "Lounge", description: "Token-gated space", icon: Crown, color: "text-amber-600" },
+  { href: "/chat", label: "Chat", description: "AI credential assistant", icon: MessageSquare, iconColor: "text-purple-400" },
+  { href: "/connect", label: "Connect", description: "Link accounts & wallets", icon: Plug, iconColor: "text-blue-400" },
+  { href: "/credentials", label: "Credentials", description: "View issued credentials", icon: BadgeCheck, iconColor: "text-emerald-400" },
+  { href: "/verify", label: "Verify", description: "Check any credential", icon: Shield, iconColor: "text-amber-400" },
+  { href: "/passport", label: "Passport", description: "Reputation identity hub", icon: Fingerprint, iconColor: "text-rose-400" },
+  { href: "/crypto", label: "Cryptography", description: "Learn ZK primitives", icon: Lock, iconColor: "text-sky-400" },
+  { href: "/playground", label: "Playground", description: "Test ZK circuits", icon: FlaskConical, iconColor: "text-purple-400" },
+  { href: "/lounge", label: "Lounge", description: "Token-gated space", icon: Crown, iconColor: "text-amber-400" },
 ];
 
 export default function OverviewPage() {
@@ -130,14 +130,14 @@ export default function OverviewPage() {
   return (
     <div className="max-w-5xl mx-auto space-y-10">
       {/* Welcome Banner */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--primary)] via-[var(--primary)] to-[var(--secondary)] p-8 text-white">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djZoLTZ2LTZoNnptMC0zMHY2aC02VjRoNnptMCAzMHY2aC02di02aDZ6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-30" />
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] p-8 text-white">
+        <div className="absolute inset-0 opacity-10" style={{ backgroundImage: "radial-gradient(circle at 1px 1px, white 1px, transparent 0)", backgroundSize: "24px 24px" }} />
         <div className="relative">
-          <p className="text-white/70 text-sm font-medium mb-1">
+          <p className="text-white/60 text-sm font-medium mb-1">
             {address ? `Connected: ${address.slice(0, 8)}...${address.slice(-6)}` : "Welcome back"}
           </p>
           <h1 className="text-3xl font-bold mb-2">ZKCred Platform</h1>
-          <p className="text-white/80 max-w-lg mb-6">
+          <p className="text-white/70 max-w-lg mb-6">
             Create privacy-preserving credentials, build your reputation passport, and prove facts without revealing data.
           </p>
           <div className="flex gap-3">
@@ -169,11 +169,13 @@ export default function OverviewPage() {
               <Link
                 key={action.href}
                 href={action.href}
-                className={`group ${action.color} ${action.textColor} p-5 rounded-2xl transition-all duration-200 hover:shadow-lg hover:scale-[1.02]`}
+                className="group p-5 bg-white rounded-2xl border border-[var(--border-light)] hover:border-[var(--border-hover)] hover:shadow-sm transition-all duration-200"
               >
-                <Icon className="w-6 h-6 mb-3 opacity-90" />
-                <p className="font-semibold text-sm">{action.label}</p>
-                <p className="text-xs opacity-75 mt-1">{action.description}</p>
+                <div className={`w-10 h-10 rounded-xl ${action.iconBg} flex items-center justify-center mb-3`}>
+                  <Icon className={`w-5 h-5 ${action.iconColor}`} />
+                </div>
+                <p className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">{action.label}</p>
+                <p className="text-xs text-[var(--text-muted)] mt-1">{action.description}</p>
               </Link>
             );
           })}
@@ -231,8 +233,8 @@ export default function OverviewPage() {
                 className="p-5 bg-white rounded-xl border border-[var(--border-light)] hover:shadow-sm transition-shadow"
               >
                 <div className="flex items-start gap-3">
-                  <div className={`w-10 h-10 rounded-lg ${feature.bg} flex items-center justify-center flex-shrink-0`}>
-                    <Icon className={`w-5 h-5 ${feature.color}`} />
+                  <div className={`w-10 h-10 rounded-lg ${feature.iconBg} flex items-center justify-center flex-shrink-0`}>
+                    <Icon className={`w-5 h-5 ${feature.iconColor}`} />
                   </div>
                   <div>
                     <p className="font-semibold text-sm text-[var(--text-primary)]">{feature.title}</p>
@@ -255,9 +257,9 @@ export default function OverviewPage() {
               <Link
                 key={page.href}
                 href={page.href}
-                className="group p-4 bg-white rounded-xl border border-[var(--border-light)] hover:border-[var(--primary)]/30 hover:shadow-sm transition-all duration-200"
+                className="group p-4 bg-white rounded-xl border border-[var(--border-light)] hover:border-[var(--border-hover)] hover:shadow-sm transition-all duration-200"
               >
-                <Icon className={`w-5 h-5 ${page.color} mb-2`} />
+                <Icon className={`w-5 h-5 ${page.iconColor} mb-2`} />
                 <p className="font-semibold text-sm text-[var(--text-primary)] group-hover:text-[var(--primary)] transition-colors">
                   {page.label}
                 </p>

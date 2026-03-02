@@ -8,7 +8,6 @@ import {
   MessageSquare,
   BadgeCheck,
   Shield,
-  Settings,
   BookOpen,
   LogOut,
   FlaskConical,
@@ -30,7 +29,6 @@ const navItems = [
   { href: "/lounge", label: "Lounge", icon: Crown },
   { href: "/crypto", label: "Cryptography", icon: Lock },
   { href: "/examples/discord", label: "Examples", icon: Code },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {
