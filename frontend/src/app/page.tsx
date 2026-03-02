@@ -136,7 +136,7 @@ export default function OverviewPage() {
           <p className="text-white/60 text-sm font-medium mb-1">
             {address ? `Connected: ${address.slice(0, 8)}...${address.slice(-6)}` : "Welcome back"}
           </p>
-          <h1 className="text-3xl font-bold mb-2">ZKCred Platform</h1>
+          <h1 className="text-3xl font-bold mb-2" style={{ color: "white" }}>ZKCred Platform</h1>
           <p className="text-white/70 max-w-lg mb-6">
             Create privacy-preserving credentials, build your reputation passport, and prove facts without revealing data.
           </p>

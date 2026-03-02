@@ -10,7 +10,6 @@ import type { CredentialType } from "@/types/credential";
 import { CREDENTIAL_CONFIG } from "@/lib/badges/config";
 import { PixelBadge } from "@/components/credential/PixelBadge";
 import { Plus, Filter, Grid, List, BadgeCheck } from "lucide-react";
-import type { Tier } from "@/types/credential";
 import { cn } from "@/lib/cn";
 
 type FilterType = "all" | CredentialType;
@@ -172,14 +171,16 @@ function EmptyState({
           <div className="mt-8 pt-8 border-t border-[var(--border-light)]">
             <p className="text-sm text-[var(--text-muted)] mb-4">Available badges:</p>
             <div className="flex justify-center gap-4 flex-wrap">
-              {([0, 1, 2, 3] as Tier[]).map((tier) => (
-                <div key={tier} className="text-center flex flex-col items-center gap-2">
-                  <PixelBadge credentialType="btc_tier" tier={tier} size="md" />
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {CREDENTIAL_CONFIG.btc_tier.tiers[tier].name}
-                  </span>
-                </div>
-              ))}
+              {(Object.entries(CREDENTIAL_CONFIG) as [CredentialType, typeof CREDENTIAL_CONFIG[CredentialType]][]).map(
+                ([type, config]) => (
+                  <div key={type} className="text-center flex flex-col items-center gap-2">
+                    <PixelBadge credentialType={type} tier={2} size="md" />
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {config.label}
+                    </span>
+                  </div>
+                )
+              )}
             </div>
           </div>
         )}
