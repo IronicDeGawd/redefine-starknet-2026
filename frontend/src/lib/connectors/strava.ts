@@ -27,10 +27,10 @@ export interface StravaTierResult {
 }
 
 const TIER_NAMES: Record<number, string> = {
-  0: "Starter",
-  1: "Active",
-  2: "Athlete",
-  3: "Ultra",
+  0: "Sneaker",
+  1: "Runner",
+  2: "Mountain",
+  3: "Peak",
 };
 
 /**

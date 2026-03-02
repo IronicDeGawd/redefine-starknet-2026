@@ -26,10 +26,10 @@ export interface GitHubTierResult {
 }
 
 const TIER_NAMES: Record<number, string> = {
-  0: "Newbie",
-  1: "Builder",
-  2: "Veteran",
-  3: "Elite",
+  0: "Seedling",
+  1: "Hammer",
+  2: "Star",
+  3: "Trophy",
 };
 
 /**
