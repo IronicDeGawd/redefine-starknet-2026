@@ -1,18 +1,10 @@
 /**
  * Server-side EIP-191 Ethereum signature verification.
- * Uses @noble/secp256k1 v3 + @noble/hashes v2 (both already installed).
+ * Uses @noble/curves + @noble/hashes (both already installed).
  */
 
-import { recoverPublicKey } from "@noble/secp256k1";
+import { secp256k1 } from "@noble/curves/secp256k1";
 import { keccak_256 } from "@noble/hashes/sha3.js";
-
-function hexToBytes(hex: string): Uint8Array {
-  const bytes = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < hex.length; i += 2) {
-    bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
-  }
-  return bytes;
-}
 
 /**
  * Verify an EIP-191 personal_sign signature.
@@ -57,16 +49,9 @@ export function verifyEthSignature(
     if (v >= 27) v -= 27;
     if (v !== 0 && v !== 1) return false;
 
-    // 4. Build 65-byte recovered signature (r[32] + s[32] + v[1])
-    const rBytes = hexToBytes(r);
-    const sBytes = hexToBytes(s);
-    const sig65 = new Uint8Array(65);
-    sig65.set(rBytes, 0);
-    sig65.set(sBytes, 32);
-    sig65[64] = v;
-
-    // Recover uncompressed public key (65 bytes starting with 0x04)
-    const pubkeyBytes = recoverPublicKey(sig65, msgHash, { prehash: false });
+    // 4. Recover uncompressed public key (65 bytes starting with 0x04)
+    const compactSig = secp256k1.Signature.fromCompact(r + s).addRecoveryBit(v);
+    const pubkeyBytes = compactSig.recoverPublicKey(msgHash).toRawBytes(false);
 
     // 5. Derive address: keccak256(uncompressed pubkey without 04 prefix) → last 20 bytes
     const uncompressed = pubkeyBytes.slice(1); // remove 0x04 prefix
