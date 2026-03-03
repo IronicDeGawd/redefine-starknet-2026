@@ -291,16 +291,33 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
         });
     };
 
-    const handleDuplicateRecovery = (status: number) => {
-        if (status === 409) {
-            const credType = connector.credentialType as CredentialType;
-            saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
-            setStatus("success");
-            setResult({ tier: -1, tierName: "Already issued" });
-            toast.info("Credential already issued — recovered from chain");
-            return true;
+    const handleDuplicateRecovery = async (status: number, identifier?: string) => {
+        if (status !== 409) return false;
+        const credType = connector.credentialType as CredentialType;
+        // Try to recover real credential data from server cache
+        let recoveredId = `recovered:${credType}`;
+        let recoveredTier = 0;
+        let recoveredTierName = "Already issued";
+        if (identifier) {
+            try {
+                const lookupRes = await fetch(`${BASE_PATH}/api/credential/lookup`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ identifier, credentialType: connector.credentialType }),
+                });
+                const lookupData = await lookupRes.json();
+                if (lookupData.exists && lookupData.credentialId) {
+                    recoveredId = lookupData.credentialId;
+                    recoveredTier = lookupData.tier ?? 0;
+                    recoveredTierName = lookupData.tierName || "Already issued";
+                }
+            } catch { /* lookup failed — use fallback */ }
         }
-        return false;
+        saveCredential({ credentialId: recoveredId, tier: recoveredTier, tierName: recoveredTierName });
+        setStatus("success");
+        setResult({ tier: recoveredTier, tierName: recoveredTierName });
+        toast.info("Credential already issued — recovered from chain");
+        return true;
     };
 
     const handleEthConnect = async () => {
@@ -324,9 +341,11 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     const lookupData = await lookupRes.json();
                     if (lookupData.exists) {
                         const credType = connector.credentialType as CredentialType;
-                        saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
+                        const recoveredId = lookupData.credentialId || `recovered:${credType}`;
+                        const recoveredTier = lookupData.tier ?? 0;
+                        saveCredential({ credentialId: recoveredId, tier: recoveredTier, tierName: lookupData.tierName || "Issued" });
                         setStatus("success");
-                        setResult({ tier: -1, tierName: "Already issued" });
+                        setResult({ tier: recoveredTier, tierName: lookupData.tierName || "Already issued" });
                         toast.info("Credential already issued for this wallet");
                         return;
                     }
@@ -363,7 +382,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                 saveCredential(data);
                 toast.success(`Credential issued! Tier: ${data.tierName}`);
-            } else if (!handleDuplicateRecovery(res.status)) {
+            } else if (!(await handleDuplicateRecovery(res.status, ethAddress))) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
                 toast.error(data.error || "Verification failed");
@@ -391,9 +410,11 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 const lookupData = await lookupRes.json();
                 if (lookupData.exists) {
                     const credType = connector.credentialType as CredentialType;
-                    saveCredential({ credentialId: `recovered:${credType}`, tier: 0, tierName: "Issued" });
+                    const recoveredId = lookupData.credentialId || `recovered:${credType}`;
+                    const recoveredTier = lookupData.tier ?? 0;
+                    saveCredential({ credentialId: recoveredId, tier: recoveredTier, tierName: lookupData.tierName || "Issued" });
                     setStatus("success");
-                    setResult({ tier: -1, tierName: "Already issued" });
+                    setResult({ tier: recoveredTier, tierName: lookupData.tierName || "Already issued" });
                     toast.info("Credential already issued for this wallet");
                     return;
                 }
@@ -433,7 +454,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                 saveCredential(data);
                 toast.success(`Credential issued! Tier: ${data.tierName}`);
-            } else if (!handleDuplicateRecovery(res.status)) {
+            } else if (!(await handleDuplicateRecovery(res.status, btcConnected.pubkey))) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
                 toast.error(data.error || "Verification failed");
@@ -500,7 +521,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     setResult({ tier: data.tier, tierName: data.tierName, transactionHash: data.transactionHash, credentialId: data.credentialId });
                     saveCredential(data);
                     toast.success(`Credential issued! Tier: ${data.tierName}`);
-                } else if (!handleDuplicateRecovery(res.status)) {
+                } else if (!(await handleDuplicateRecovery(res.status))) {
                     setStatus("error");
                     setError(data.error || "Verification failed");
                     toast.error(data.error || "Verification failed");
@@ -540,7 +561,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                 });
                 saveCredential(data);
                 toast.success(`Credential issued! Tier: ${data.tierName}`);
-            } else if (!handleDuplicateRecovery(res.status)) {
+            } else if (!(await handleDuplicateRecovery(res.status))) {
                 setStatus("error");
                 setError(data.error || "Verification failed");
             }

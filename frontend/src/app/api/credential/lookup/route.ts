@@ -11,6 +11,7 @@ import {
   isRegistryConfigured,
 } from "@/lib/starknet";
 import { hashPubkey, stringToFelt, isValidCredentialType } from "@/lib/utils";
+import { getCachedCredential } from "@/lib/redis";
 
 export const runtime = "nodejs";
 
@@ -46,7 +47,22 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     const registry = getCredentialRegistryReader();
     const issued = await registry.is_issued(pubkeyHash, credTypeFelt);
 
-    return NextResponse.json({ exists: Boolean(issued) });
+    if (!issued) {
+      return NextResponse.json({ exists: false });
+    }
+
+    // Try to recover full credential metadata from Redis
+    const cached = await getCachedCredential(pubkeyHash, credentialType);
+
+    return NextResponse.json({
+      exists: true,
+      ...(cached && {
+        credentialId: cached.credentialId,
+        tier: cached.tier,
+        tierName: cached.tierName,
+        transactionHash: cached.transactionHash,
+      }),
+    });
   } catch (error) {
     console.error("[/api/credential/lookup] Error:", error);
     return NextResponse.json(
