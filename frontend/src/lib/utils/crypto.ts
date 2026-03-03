@@ -57,6 +57,21 @@ export function generateCredentialId(
 }
 
 /**
+ * Extract credential ID from a Starknet transaction receipt.
+ * The CredentialIssued event has credential_id as a #[key] field,
+ * so it appears at keys[1] (keys[0] is the event selector hash).
+ */
+export function extractCredentialIdFromReceipt(
+  receipt: unknown
+): string | undefined {
+  const r = receipt as { events?: Array<{ keys?: string[]; data?: string[] }> };
+  if (!r.events?.length) return undefined;
+  const selector = hash.getSelectorFromName("CredentialIssued");
+  const event = r.events.find((e) => e.keys?.[0] === selector);
+  return event?.keys?.[1];
+}
+
+/**
  * Convert a short string to felt252
  */
 export function stringToFelt(str: string): string {

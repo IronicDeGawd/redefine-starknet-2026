@@ -2,6 +2,7 @@ export {
   hashPubkey,
   generateRandomSalt,
   generateCredentialId,
+  extractCredentialIdFromReceipt,
   stringToFelt,
   feltToString,
   formatCredentialId,
