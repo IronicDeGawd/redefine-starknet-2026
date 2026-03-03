@@ -6,14 +6,47 @@ import { Input } from "@/components/ui/Input";
 import { Card } from "@/components/ui/Card";
 import { useCredential } from "@/hooks/useCredential";
 import type { VerifyCredentialResponse } from "@/types/api";
-import type { Tier } from "@/types/credential";
-import { TIER_NAMES, TIER_RANGES } from "@/types/credential";
-import { TierIcon } from "@/components/credential/TierBadge";
+import type { Tier, CredentialType } from "@/types/credential";
+import { CREDENTIAL_TIER_NAMES, CREDENTIAL_TIER_RANGES } from "@/types/credential";
+import { CREDENTIAL_CONFIG } from "@/lib/badges/config";
 import { Search, Shield, CheckCircle, XCircle, ExternalLink, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/cn";
 
 interface CredentialVerifierProps {
   initialId?: string;
+}
+
+const CREDENTIAL_LABELS: Record<string, string> = {
+  btc_tier: "BTC Holdings",
+  wallet_age: "Wallet Age",
+  eth_holder: "ETH Holdings",
+  github_dev: "GitHub Developer",
+  codeforces_coder: "Codeforces Coder",
+  steam_gamer: "Steam Gamer",
+  strava_athlete: "Strava Athlete",
+};
+
+function getProofTexts(type: string, tier: Tier): string[] {
+  const ranges = CREDENTIAL_TIER_RANGES[type as CredentialType];
+  const range = ranges?.[tier] || "";
+  switch (type) {
+    case "btc_tier":
+      return ["Holder controls a Bitcoin wallet", `Holdings verified in ${range} range`, "Credential verified on Starknet blockchain"];
+    case "wallet_age":
+      return ["Holder controls a Bitcoin wallet", `Wallet age verified: ${range}`, "Credential verified on Starknet blockchain"];
+    case "eth_holder":
+      return ["Holder controls an Ethereum wallet", `Balance verified in ${range} range`, "Credential verified on Starknet blockchain"];
+    case "github_dev":
+      return ["Holder owns a GitHub account", `Public repositories: ${range}`, "Credential verified on Starknet blockchain"];
+    case "codeforces_coder":
+      return ["Holder has a Codeforces profile", `Rating verified: ${range}`, "Credential verified on Starknet blockchain"];
+    case "steam_gamer":
+      return ["Holder owns a Steam account", `Game library: ${range}`, "Credential verified on Starknet blockchain"];
+    case "strava_athlete":
+      return ["Holder has a Strava profile", `Total distance: ${range}`, "Credential verified on Starknet blockchain"];
+    default:
+      return ["Identity verified", "Credential verified on Starknet blockchain"];
+  }
 }
 
 const tierCardBg: Record<Tier, string> = {
@@ -96,6 +129,9 @@ function ValidCredentialResult({
   credential: NonNullable<VerifyCredentialResponse["credential"]>;
 }) {
   const tier = credential.tier as Tier;
+  const credType = credential.type as CredentialType;
+  const tierNames = CREDENTIAL_TIER_NAMES[credType];
+  const tierRanges = CREDENTIAL_TIER_RANGES[credType];
 
   return (
     <Card
@@ -127,15 +163,15 @@ function ValidCredentialResult({
         {/* Credential Info */}
         <div className="text-center mb-6 py-6 border-y border-[var(--border-light)]">
           <div className="flex justify-center mb-4">
-            <TierIcon tier={tier} size="lg" />
+            <BadgeImage type={credType} tier={tier} />
           </div>
           <h4 className="text-2xl font-bold text-[var(--text-primary)]">
-            {TIER_NAMES[tier]} Tier
+            {tierNames?.[tier] || credential.tierName} Tier
           </h4>
           <p className="text-[var(--text-secondary)]">
-            {credential.type === "btc_tier" ? "BTC Holdings" : "Wallet Age"}
+            {CREDENTIAL_LABELS[credential.type] || credential.type}
           </p>
-          <p className="text-sm text-[var(--text-muted)]">{TIER_RANGES[tier]}</p>
+          <p className="text-sm text-[var(--text-muted)]">{tierRanges?.[tier] || ""}</p>
         </div>
 
         {/* Details */}
@@ -169,9 +205,9 @@ function ValidCredentialResult({
             This credential proves
           </h5>
           <ul className="space-y-2">
-            <ProofItem text="Holder controls a Bitcoin wallet" />
-            <ProofItem text={`Holdings verified in ${TIER_RANGES[tier]} range`} />
-            <ProofItem text="Credential verified on Starknet blockchain" />
+            {getProofTexts(credential.type, tier).map((text) => (
+              <ProofItem key={text} text={text} />
+            ))}
           </ul>
         </div>
 
@@ -247,6 +283,20 @@ function ProofItem({ text }: { text: string }) {
       </svg>
       {text}
     </li>
+  );
+}
+
+function BadgeImage({ type, tier }: { type: CredentialType; tier: Tier }) {
+  const config = CREDENTIAL_CONFIG[type];
+  const basePath = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+  if (!config) return null;
+  const src = `${basePath}${config.tiers[tier].image}`;
+  return (
+    <img
+      src={src}
+      alt={`${config.tiers[tier].name} badge`}
+      className="w-20 h-20 object-contain drop-shadow-md"
+    />
   );
 }
 
