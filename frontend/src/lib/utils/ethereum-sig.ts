@@ -3,7 +3,7 @@
  * Uses @noble/curves + @noble/hashes (both already installed).
  */
 
-import { secp256k1 } from "@noble/curves/secp256k1";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import { keccak_256 } from "@noble/hashes/sha3.js";
 
 /**
@@ -50,8 +50,8 @@ export function verifyEthSignature(
     if (v !== 0 && v !== 1) return false;
 
     // 4. Recover uncompressed public key (65 bytes starting with 0x04)
-    const compactSig = secp256k1.Signature.fromCompact(r + s).addRecoveryBit(v);
-    const pubkeyBytes = compactSig.recoverPublicKey(msgHash).toRawBytes(false);
+    const compactSig = secp256k1.Signature.fromHex(r + s).addRecoveryBit(v);
+    const pubkeyBytes = compactSig.recoverPublicKey(msgHash).toBytes(false);
 
     // 5. Derive address: keccak256(uncompressed pubkey without 04 prefix) → last 20 bytes
     const uncompressed = pubkeyBytes.slice(1); // remove 0x04 prefix
