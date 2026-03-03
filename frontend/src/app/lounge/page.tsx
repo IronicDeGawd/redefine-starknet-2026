@@ -183,34 +183,29 @@ export default function LoungePage() {
     setUserTier(null);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/v1/credentials/${encodeURIComponent(trimmedId)}`, {
-        headers: {
-          "X-API-Key": "zkcred_demo_playground_key",
-        },
-      });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/credential/${encodeURIComponent(trimmedId)}`);
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
         if (res.status === 404) {
           setError("Credential not found. Check your credential ID and try again.");
-        } else if (res.status === 401) {
-          setError("Authentication failed. Invalid API key.");
         } else {
-          setError(data?.error?.message || `Request failed (${res.status})`);
+          setError(data?.error || `Request failed (${res.status})`);
         }
         setChecked(true);
         return;
       }
 
       const data = await res.json();
+      const cred = data.credential ?? data;
 
-      if (data.status === "revoked") {
+      if (cred.status === "revoked") {
         setError("This credential has been revoked and is no longer valid.");
         setChecked(true);
         return;
       }
 
-      const tier = data.tier as TierLevel;
+      const tier = cred.tier as TierLevel;
       setUserTier(tier);
       setChecked(true);
 

@@ -11,14 +11,20 @@
  */
 
 // ---------------------------------------------------------------------------
-// Configuration
+// Configuration — read at runtime inside functions, not at module load time.
+// Webpack can inline process.env reads at build time for top-level consts,
+// which breaks when env vars are only set on the deployment server.
 // ---------------------------------------------------------------------------
 
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
-const DISCORD_CLIENT_ID = process.env.DISCORD_CLIENT_ID;
-const GUILD_ID = process.env.DISCORD_GUILD_ID;
-const ZKCRED_API_URL = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-const ZKCRED_API_KEY = process.env.ZKCRED_DISCORD_API_KEY || "";
+function getConfig() {
+  return {
+    DISCORD_TOKEN: process.env.DISCORD_TOKEN,
+    DISCORD_CLIENT_ID: process.env.DISCORD_CLIENT_ID,
+    GUILD_ID: process.env.DISCORD_GUILD_ID,
+    ZKCRED_API_URL: `http://localhost:${process.env.PORT || 3000}${process.env.NEXT_PUBLIC_BASE_PATH || ""}`,
+    ZKCRED_API_KEY: process.env.ZKCRED_DISCORD_API_KEY || "",
+  };
+}
 
 /** Per-credential-type config for Discord roles — must match CREDENTIAL_TIER_NAMES in credential.ts */
 const CREDENTIAL_TIERS: Record<string, { label: string; tiers: Record<number, string>; color: number }> = {
@@ -72,12 +78,15 @@ let botStarted = false;
 
 export async function startDiscordBot() {
   if (botStarted) return;
+  const { DISCORD_TOKEN, DISCORD_CLIENT_ID, GUILD_ID, ZKCRED_API_URL, ZKCRED_API_KEY } = getConfig();
   if (!DISCORD_TOKEN) {
     console.log("[Discord Bot] DISCORD_TOKEN not set — bot disabled");
     return;
   }
 
   botStarted = true;
+  console.log("[Discord Bot] Starting...");
+  console.log(`[Discord Bot] Config: CLIENT_ID=${DISCORD_CLIENT_ID ? "set" : "MISSING"} GUILD_ID=${GUILD_ID ? "set" : "MISSING"} API_KEY=${ZKCRED_API_KEY ? "set" : "MISSING"} API_URL=${ZKCRED_API_URL}`);
 
   try {
     // Dynamic import — only loaded when the bot is actually starting
@@ -112,12 +121,15 @@ export async function startDiscordBot() {
     // ----- Verify handler -----
     async function handleVerify(interaction: import("discord.js").ChatInputCommandInteraction) {
       const credentialId = interaction.options.getString("credential_id", true);
+      console.log(`[Discord Bot] /verify from ${interaction.user.tag} — credential: ${credentialId}`);
       await interaction.deferReply();
 
       try {
-        const res = await fetch(
-          `${ZKCRED_API_URL}/api/v1/credentials/${credentialId}/verify`,
-          {
+        const verifyUrl = `${ZKCRED_API_URL}/api/v1/credentials/${credentialId}/verify`;
+        console.log(`[Discord Bot] Calling API: ${verifyUrl}`);
+        console.log(`[Discord Bot] API key present: ${ZKCRED_API_KEY ? "yes" : "NO — MISSING"}`);
+
+        const res = await fetch(verifyUrl, {
             method: "POST",
             headers: {
               "X-API-Key": ZKCRED_API_KEY,
@@ -126,7 +138,9 @@ export async function startDiscordBot() {
           }
         );
 
+        console.log(`[Discord Bot] API response: ${res.status} ${res.statusText}`);
         const data = await res.json();
+        console.log(`[Discord Bot] API data:`, JSON.stringify(data));
 
         if (!data.valid) {
           const reason =
@@ -135,6 +149,8 @@ export async function startDiscordBot() {
               : data.reason === "revoked"
                 ? "Credential has been revoked"
                 : "Verification failed";
+
+          console.log(`[Discord Bot] Verification failed: ${reason} (reason: ${data.reason})`);
 
           const embed = new EmbedBuilder()
             .setTitle("Verification Failed")
@@ -146,6 +162,7 @@ export async function startDiscordBot() {
         }
 
         const roleInfo = getRoleInfo(data.credential.type, data.credential.tier);
+        console.log(`[Discord Bot] Verified! type=${data.credential.type} tier=${data.credential.tier} role=${roleInfo.name}`);
 
         const member = interaction.guild?.members.cache.get(interaction.user.id) ??
           (await interaction.guild?.members.fetch(interaction.user.id));
@@ -206,6 +223,7 @@ export async function startDiscordBot() {
           )
           .setColor(roleInfo.color);
 
+        console.log(`[Discord Bot] Roles assigned to ${interaction.user.tag}: ${assignedRoles.join(", ")}`);
         await interaction.editReply({ embeds: [embed] });
       } catch (err) {
         console.error("[Discord Bot] Verify error:", err);

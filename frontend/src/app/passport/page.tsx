@@ -64,11 +64,11 @@ export default function PassportPage() {
       const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/credential/${encodeURIComponent(trimmed)}`);
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        setError(body.error?.message || `Credential not found (${res.status})`);
+        setError(body.error || `Credential not found (${res.status})`);
         return;
       }
       const data = await res.json();
-      setCredential(data);
+      setCredential(data.credential ?? data);
     } catch {
       setError("Failed to look up credential. Check your connection.");
     } finally {
