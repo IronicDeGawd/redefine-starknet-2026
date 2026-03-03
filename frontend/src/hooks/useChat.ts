@@ -4,6 +4,26 @@ import { useCallback, useRef } from "react";
 import { useAppStore } from "@/stores/useAppStore";
 import type { ChatMessage, ChatResponse, ToolResult } from "@/types/api";
 
+function buildStateContext(): string | null {
+  const state = useAppStore.getState();
+  const parts: string[] = [];
+
+  if (state.btcWallet.status === "connected" && state.btcWallet.address) {
+    parts.push(`BTC wallet connected: ${state.btcWallet.address.slice(0, 8)}...${state.btcWallet.address.slice(-6)}`);
+  }
+  if (state.ethWallet.status === "connected" && state.ethWallet.address) {
+    parts.push(`ETH wallet connected: ${state.ethWallet.address.slice(0, 8)}...${state.ethWallet.address.slice(-6)}`);
+  }
+  if (state.credentials.length > 0) {
+    for (const cred of state.credentials) {
+      parts.push(`Existing credential: ${cred.credentialType} (tier ${cred.tier}, ID: ${cred.id.slice(0, 12)}..., ${cred.revoked ? "revoked" : "active"})`);
+    }
+  }
+
+  if (parts.length === 0) return null;
+  return `[Current user state: ${parts.join("; ")}]`;
+}
+
 export function useChat() {
   const {
     messages,
@@ -70,6 +90,14 @@ export function useChat() {
           apiMessages.push({ role: "user", content });
         }
 
+        // Prepend current state context so the LLM knows what's already done
+        const stateContext = buildStateContext();
+        if (stateContext) {
+          apiMessages.unshift({ role: "user", content: stateContext });
+          // Ensure alternating roles — add a placeholder assistant response after context
+          apiMessages.splice(1, 0, { role: "assistant", content: "Understood, I see your current state." });
+        }
+
         const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/chat`, {
           method: "POST",
           headers: {
@@ -83,11 +111,12 @@ export function useChat() {
           }),
         });
 
-        if (!response.ok) {
-          throw new Error("Failed to get response");
-        }
-
         const data: ChatResponse = await response.json();
+
+        if (!response.ok) {
+          const errMsg = (data as unknown as { error?: string }).error || "Failed to get response";
+          throw new Error(errMsg);
+        }
 
         if (data.type === "text" && data.content) {
           addMessage({
@@ -104,9 +133,10 @@ export function useChat() {
         }
       } catch (error) {
         console.error("Chat error:", error);
+        const msg = error instanceof Error ? error.message : "Something went wrong";
         addMessage({
           role: "assistant",
-          content: "Sorry, I encountered an error. Please try again.",
+          content: `Sorry, I encountered an error: ${msg}`,
         });
       } finally {
         setAgentThinking(false);

@@ -112,27 +112,44 @@ export async function POST(
     // 9. Return response
     return NextResponse.json(response);
   } catch (error) {
-    console.error("[/api/chat] Error:", error);
+    const errorMessage = getErrorMessage(error);
+    const errorName = error instanceof Error ? error.constructor.name : "Unknown";
+    console.error(`[/api/chat] ${errorName}: ${errorMessage}`);
+    if (error instanceof Error && error.stack) {
+      console.error("[/api/chat] Stack:", error.stack.split("\n").slice(0, 5).join("\n"));
+    }
 
     // Check for specific error types
-    const errorMessage = getErrorMessage(error);
-
-    if (errorMessage.includes("credentials")) {
+    if (errorMessage.includes("credentials") || errorMessage.includes("AccessDeniedException")) {
       return NextResponse.json(
         { error: "AI service not configured. Please check AWS credentials." },
         { status: 503 }
       );
     }
 
-    if (errorMessage.includes("throttl") || errorMessage.includes("rate")) {
+    if (errorMessage.includes("throttl") || errorMessage.includes("rate") || errorMessage.includes("TooManyRequestsException")) {
       return NextResponse.json(
         { error: "AI service is busy. Please try again in a moment." },
         { status: 429 }
       );
     }
 
+    if (errorMessage.includes("ValidationException") || errorMessage.includes("malformed")) {
+      return NextResponse.json(
+        { error: "Message format error. Please start a new conversation." },
+        { status: 400 }
+      );
+    }
+
+    if (errorMessage.includes("ModelNotReadyException") || errorMessage.includes("not found") || errorMessage.includes("not available")) {
+      return NextResponse.json(
+        { error: "AI model is not available. Please try again later." },
+        { status: 503 }
+      );
+    }
+
     return NextResponse.json(
-      { error: "Failed to process your request. Please try again." },
+      { error: `Chat service error: ${errorMessage.slice(0, 100)}` },
       { status: 500 }
     );
   }
