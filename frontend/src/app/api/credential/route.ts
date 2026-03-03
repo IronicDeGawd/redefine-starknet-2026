@@ -13,12 +13,15 @@ import {
 import {
   hashPubkey,
   generateRandomSalt,
+  generateCredentialId,
+  extractCredentialIdFromReceipt,
   stringToFelt,
   validateIssueRequest,
   getErrorMessage,
   parseStarknetError,
   verifyBitcoinSignature,
 } from "@/lib/utils";
+import { cacheCredential } from "@/lib/redis";
 import type {
   IssueCredentialRequest,
   IssueCredentialResponse,
@@ -114,28 +117,14 @@ export async function POST(
     const receipt = await provider.waitForTransaction(tx.transaction_hash);
 
     // 11. Extract credential ID from events
-    let credentialId: string | undefined;
-
-    // Type guard to check if receipt has events
-    const receiptWithEvents = receipt as { events?: Array<{ keys?: string[] }> };
-    if (receiptWithEvents.events && receiptWithEvents.events.length > 0) {
-      // Look for CredentialIssued event
-      const issuedEvent = receiptWithEvents.events.find((event) =>
-        event.keys?.some((key) => key.includes("CredentialIssued"))
-      );
-
-      if (issuedEvent && issuedEvent.keys && issuedEvent.keys.length > 1) {
-        // The credential_id is typically the first key after the event selector
-        credentialId = issuedEvent.keys[1];
-      }
-    }
-
-    // Fallback: compute credential ID locally if not found in events
+    let credentialId = extractCredentialIdFromReceipt(receipt);
     if (!credentialId) {
-      // The contract uses poseidon hash of (pubkey_hash, type, tier, salt)
-      // We can compute this client-side as well
-      credentialId = `computed:${pubkeyHash.slice(0, 16)}`;
+      credentialId = generateCredentialId(pubkeyHash, request.credentialType, request.tier, salt);
     }
+
+    cacheCredential(pubkeyHash, request.credentialType, {
+      credentialId, tier: request.tier, transactionHash: tx.transaction_hash,
+    });
 
     // 12. Return success
     return NextResponse.json({

@@ -16,12 +16,14 @@ import {
   hashPubkey,
   generateRandomSalt,
   generateCredentialId,
+  extractCredentialIdFromReceipt,
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
   isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
+import { cacheCredential } from "@/lib/redis";
 import { verifyEthBalance } from "@/lib/connectors/ethereum";
 import { createCommitment } from "@/lib/crypto/commitment";
 import { verifyEthSignature, isTimestampValid } from "@/lib/utils/ethereum-sig";
@@ -177,19 +179,15 @@ export async function POST(
     // 10. Wait for confirmation and extract credential ID
     const receipt = await provider.waitForTransaction(tx.transaction_hash);
 
-    let credentialId: string | undefined;
-    const receiptWithEvents = receipt as { events?: Array<{ keys?: string[] }> };
-    if (receiptWithEvents.events?.length) {
-      const issuedEvent = receiptWithEvents.events.find((e) =>
-        e.keys?.some((k) => k.includes("CredentialIssued"))
-      );
-      if (issuedEvent?.keys && issuedEvent.keys.length > 1) {
-        credentialId = issuedEvent.keys[1];
-      }
-    }
+    let credentialId = extractCredentialIdFromReceipt(receipt);
     if (!credentialId) {
       credentialId = generateCredentialId(pubkeyHash, "eth_holder", verification.tier, salt);
     }
+
+    cacheCredential(pubkeyHash, "eth_holder", {
+      credentialId, tier: verification.tier, tierName: verification.tierName,
+      transactionHash: tx.transaction_hash,
+    });
 
     // 11. Return success
     return NextResponse.json({

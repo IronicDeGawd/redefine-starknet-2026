@@ -16,12 +16,14 @@ import {
   hashPubkey,
   generateRandomSalt,
   generateCredentialId,
+  extractCredentialIdFromReceipt,
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
   isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
+import { cacheCredential } from "@/lib/redis";
 import { verifySteam } from "@/lib/connectors/steam";
 import { createCommitment } from "@/lib/crypto/commitment";
 import type { ApiError } from "@/types/api";
@@ -96,20 +98,15 @@ export async function POST(
 
     const receipt = await provider.waitForTransaction(tx.transaction_hash);
 
-    // Extract credential ID from CredentialIssued event
-    let credentialId: string | undefined;
-    const receiptWithEvents = receipt as { events?: Array<{ keys?: string[] }> };
-    if (receiptWithEvents.events?.length) {
-      const issuedEvent = receiptWithEvents.events.find((e) =>
-        e.keys?.some((k) => k.includes("CredentialIssued"))
-      );
-      if (issuedEvent?.keys && issuedEvent.keys.length > 1) {
-        credentialId = issuedEvent.keys[1];
-      }
-    }
+    let credentialId = extractCredentialIdFromReceipt(receipt);
     if (!credentialId) {
       credentialId = generateCredentialId(pubkeyHash, "steam_gamer", verification.tier, salt);
     }
+
+    cacheCredential(pubkeyHash, "steam_gamer", {
+      credentialId, tier: verification.tier, tierName: verification.tierName,
+      transactionHash: tx.transaction_hash,
+    });
 
     // Clear the cookie after successful issuance
     const response = NextResponse.json({
