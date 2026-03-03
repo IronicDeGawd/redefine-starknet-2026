@@ -1,6 +1,6 @@
 "use client";
 
-import { Bitcoin, Wallet, Github, HelpCircle, MessageSquare } from "lucide-react";
+import { Bitcoin, Wallet, Github, HelpCircle, MessageSquare, Eye, Gamepad2 } from "lucide-react";
 
 interface WelcomeScreenProps {
   onQuickAction: (message: string) => void;
@@ -16,14 +16,6 @@ const quickActions = [
     hoverBg: "hover:bg-amber-100",
   },
   {
-    label: "Verify ETH Holdings",
-    message: "I want to prove my Ethereum holdings",
-    icon: Wallet,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
-    hoverBg: "hover:bg-blue-100",
-  },
-  {
     label: "Prove GitHub Dev",
     message: "I want to create a GitHub developer credential",
     icon: Github,
@@ -32,9 +24,17 @@ const quickActions = [
     hoverBg: "hover:bg-violet-100",
   },
   {
-    label: "How does it work?",
-    message: "How does ZKCred create privacy-preserving credentials?",
-    icon: HelpCircle,
+    label: "Verify Steam Gamer",
+    message: "I want to create a Steam gamer credential",
+    icon: Gamepad2,
+    color: "text-gray-600",
+    bgColor: "bg-gray-50",
+    hoverBg: "hover:bg-gray-100",
+  },
+  {
+    label: "Check My Credentials",
+    message: "What credentials do I already have?",
+    icon: Eye,
     color: "text-emerald-600",
     bgColor: "bg-emerald-50",
     hoverBg: "hover:bg-emerald-100",

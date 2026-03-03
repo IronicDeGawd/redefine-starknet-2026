@@ -1,14 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/Button";
 import { useBtcWallet } from "@/hooks/useBtcWallet";
 import { useEthWallet } from "@/hooks/useEthWallet";
 import { useCredential } from "@/hooks/useCredential";
+import { useAppStore } from "@/stores/useAppStore";
 import { TierIcon } from "@/components/credential/TierBadge";
+import { CREDENTIAL_CONFIG } from "@/lib/badges/config";
 import type { ToolUse } from "@/types/api";
 import type { Tier, CredentialType } from "@/types/credential";
-import { Wallet, PenTool, Send, CheckCircle2, AlertCircle, Bitcoin, Github, Code2, Gamepad2, Activity, Search, Sparkles, LinkIcon, ExternalLink } from "lucide-react";
+import { Wallet, PenTool, Send, CheckCircle2, AlertCircle, Bitcoin, Github, Code2, Gamepad2, Activity, Search, Sparkles, LinkIcon, ExternalLink, Eye, Trash2 } from "lucide-react";
 import { getOpenIDUrl } from "@/lib/connectors/steam";
 import { TIER_NAMES, TIER_RANGES } from "@/types/credential";
 
@@ -71,6 +73,25 @@ export function ToolAction({ toolUse, onAction }: ToolActionProps) {
         <MintBadgeAction
           credentialType={input.credentialType as CredentialType}
           tier={input.tier as Tier}
+          onAction={onAction}
+        />
+      );
+
+    case "check_auth_status":
+      return <CheckAuthStatusAction onAction={onAction} />;
+
+    case "lookup_credential_by_type":
+      return (
+        <LookupCredentialAction
+          credentialType={input.credentialType as CredentialType}
+          onAction={onAction}
+        />
+      );
+
+    case "revoke_credential":
+      return (
+        <RevokeCredentialAction
+          credentialId={input.credentialId as string}
           onAction={onAction}
         />
       );
@@ -166,7 +187,9 @@ interface SignRequestActionProps {
 }
 
 function SignRequestAction({ credentialType, tier, onAction }: SignRequestActionProps) {
-  const { signMessage, pubkey, address } = useBtcWallet();
+  const btcWallet = useBtcWallet();
+  const ethWallet = useEthWallet();
+  const isEth = credentialType === "eth_holder";
   const [isSigning, setIsSigning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -177,14 +200,22 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
     setIsSigning(true);
 
     try {
-      const signature = await signMessage(message);
-      onAction("signed", { signature, message, pubkey, address });
+      if (isEth) {
+        const signature = await ethWallet.signMessage(message);
+        onAction("signed", { signature, message, address: ethWallet.address });
+      } else {
+        const signature = await btcWallet.signMessage(message);
+        onAction("signed", { signature, message, pubkey: btcWallet.pubkey, address: btcWallet.address });
+      }
     } catch {
       setError("Signing failed. Please try again.");
     } finally {
       setIsSigning(false);
     }
   };
+
+  const walletLabel = isEth ? "MetaMask" : "Xverse";
+  const currencyLabel = isEth ? "ETH" : "BTC";
 
   return (
     <div className="p-5 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
@@ -195,7 +226,7 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
         <div>
           <p className="font-semibold text-[var(--text-primary)]">Sign Message</p>
           <p className="text-sm text-[var(--text-muted)]">
-            Verify wallet ownership (no BTC will be spent)
+            Verify wallet ownership (no {currencyLabel} will be spent)
           </p>
         </div>
       </div>
@@ -234,7 +265,7 @@ function SignRequestAction({ credentialType, tier, onAction }: SignRequestAction
         className="w-full"
       >
         <PenTool className="w-4 h-4" />
-        Sign with Xverse
+        Sign with {walletLabel}
       </Button>
     </div>
   );
@@ -746,6 +777,182 @@ function MintBadgeAction({
       <Button onClick={handleMint} isLoading={status === "minting"} className="w-full">
         <Sparkles className="w-4 h-4" />
         Mint Badge NFT
+      </Button>
+    </div>
+  );
+}
+
+// ============================================
+// Check Auth Status Action (auto-executes)
+// ============================================
+
+function CheckAuthStatusAction({ onAction }: { onAction: (action: string, data?: unknown) => void }) {
+  const btcWallet = useAppStore((s) => s.btcWallet);
+  const ethWallet = useAppStore((s) => s.ethWallet);
+  const credentials = useAppStore((s) => s.credentials);
+
+  useEffect(() => {
+    const status = {
+      btcWallet: btcWallet.status === "connected"
+        ? { connected: true, address: btcWallet.address }
+        : { connected: false },
+      ethWallet: ethWallet.status === "connected"
+        ? { connected: true, address: ethWallet.address }
+        : { connected: false },
+      credentials: credentials.map((c) => ({
+        id: c.id,
+        type: c.credentialType,
+        tier: c.tier,
+        active: !c.revoked,
+      })),
+    };
+    onAction("status_checked", status);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return (
+    <div className="p-4 bg-white rounded-2xl border border-[var(--border)] shadow-sm">
+      <div className="flex items-center gap-3">
+        <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center">
+          <Eye className="w-5 h-5 text-blue-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-[var(--text-primary)] text-sm">Checking your status...</p>
+          <p className="text-xs text-[var(--text-muted)]">
+            {credentials.length} credential{credentials.length !== 1 ? "s" : ""} found
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// Lookup Credential by Type Action (auto-executes)
+// ============================================
+
+function LookupCredentialAction({
+  credentialType,
+  onAction,
+}: {
+  credentialType: CredentialType;
+  onAction: (action: string, data?: unknown) => void;
+}) {
+  const credentials = useAppStore((s) => s.credentials);
+  const config = CREDENTIAL_CONFIG[credentialType];
+
+  useEffect(() => {
+    const found = credentials.find((c) => c.credentialType === credentialType && !c.revoked);
+    if (found) {
+      onAction("credential_found", {
+        id: found.id,
+        type: found.credentialType,
+        tier: found.tier,
+        tierName: config?.tiers[found.tier]?.name ?? `Tier ${found.tier}`,
+        issuedAt: found.issuedAt,
+      });
+    } else {
+      onAction("credential_not_found", { type: credentialType });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const found = credentials.find((c) => c.credentialType === credentialType && !c.revoked);
+
+  return (
+    <div className={`p-4 bg-white rounded-2xl border shadow-sm ${found ? "border-[var(--success)]/30" : "border-[var(--border)]"}`}>
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${found ? "bg-[var(--success-light)]" : "bg-[var(--grey-100)]"}`}>
+          {found ? (
+            <CheckCircle2 className="w-5 h-5 text-[var(--success)]" />
+          ) : (
+            <Search className="w-5 h-5 text-[var(--text-muted)]" />
+          )}
+        </div>
+        <div>
+          <p className="font-semibold text-[var(--text-primary)] text-sm">
+            {config?.label ?? credentialType}
+          </p>
+          <p className="text-xs text-[var(--text-muted)]">
+            {found
+              ? `${config?.tiers[found.tier]?.name ?? "Tier " + found.tier} — Active`
+              : "No credential found"}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// Revoke Credential Action
+// ============================================
+
+function RevokeCredentialAction({
+  credentialId,
+  onAction,
+}: {
+  credentialId: string;
+  onAction: (action: string, data?: unknown) => void;
+}) {
+  const removeCredential = useAppStore((s) => s.removeCredential);
+  const credentials = useAppStore((s) => s.credentials);
+  const [status, setStatus] = useState<"confirm" | "done">("confirm");
+  const cred = credentials.find((c) => c.id === credentialId);
+
+  const handleRevoke = () => {
+    removeCredential(credentialId);
+    setStatus("done");
+    onAction("revoked", { credentialId });
+  };
+
+  if (!cred) {
+    return (
+      <div className="p-4 bg-white rounded-2xl border border-[var(--error)]/30 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--error-light)] flex items-center justify-center">
+            <AlertCircle className="w-5 h-5 text-[var(--error)]" />
+          </div>
+          <p className="text-sm text-[var(--text-muted)]">Credential not found locally</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "done") {
+    return (
+      <div className="p-4 bg-white rounded-2xl border border-[var(--success)]/30 shadow-sm">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[var(--success-light)] flex items-center justify-center">
+            <CheckCircle2 className="w-5 h-5 text-[var(--success)]" />
+          </div>
+          <p className="text-sm font-semibold text-[var(--text-primary)]">Credential revoked</p>
+        </div>
+      </div>
+    );
+  }
+
+  const config = CREDENTIAL_CONFIG[cred.credentialType as CredentialType];
+
+  return (
+    <div className="p-5 bg-white rounded-2xl border border-[var(--error)]/20 shadow-sm">
+      <div className="flex items-start gap-4 mb-5">
+        <div className="w-12 h-12 rounded-xl bg-red-100 flex items-center justify-center">
+          <Trash2 className="w-6 h-6 text-red-600" />
+        </div>
+        <div>
+          <p className="font-semibold text-[var(--text-primary)]">Revoke Credential</p>
+          <p className="text-sm text-[var(--text-muted)]">
+            {config?.label ?? cred.credentialType} — {config?.tiers[cred.tier]?.name ?? `Tier ${cred.tier}`}
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-4 p-3 bg-red-50 rounded-xl text-sm text-red-700">
+        This will remove the credential from your local storage. On-chain data remains unchanged.
+      </div>
+
+      <Button onClick={handleRevoke} className="w-full bg-red-600 hover:bg-red-700 text-white">
+        <Trash2 className="w-4 h-4" />
+        Confirm Revoke
       </Button>
     </div>
   );

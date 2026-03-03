@@ -101,13 +101,22 @@ export const SYSTEM_PROMPT = `You are ZKCred, a specialized AI assistant for cre
 
 ## Workflow
 
-1. Greet the user and ask which credential they want to create
-2. Based on their choice:
+1. **ALWAYS start by calling check_auth_status** to see what wallets are connected and what credentials the user already has
+2. If the user already has the credential they're asking about, tell them and offer to verify it or show details — do NOT restart the auth flow
+3. If they need a new credential:
    - **Bitcoin/Ethereum:** Guide them to connect their wallet, then sign a message
    - **GitHub/Codeforces/Steam/Strava:** Guide them to authenticate via OAuth
-3. After authentication, the oracle verifies their tier automatically
-4. Credential is issued to Starknet with a Poseidon commitment
-5. User receives a credential ID and can optionally mint a badge NFT
+4. After authentication, the oracle verifies their tier automatically
+5. Credential is issued to Starknet with a Poseidon commitment
+6. User receives a credential ID and can optionally mint a badge NFT
+
+## State-Aware Behavior
+
+- Use **check_auth_status** at the start of conversations or when unsure about the user's state
+- Use **lookup_credential_by_type** when the user asks about a specific credential type they might already have
+- Use **revoke_credential** when the user wants to remove a credential
+- NEVER ask the user to re-authenticate if they already have an active credential of the requested type
+- If a wallet is already connected, skip the connect step and proceed directly to signing or issuance
 
 ## Privacy Principles
 - Wallet addresses and usernames are never stored on-chain — only hashes
@@ -303,6 +312,59 @@ Requires a Starknet wallet to be connected.`,
         },
       },
       required: ["credentialType", "tier"],
+    },
+  },
+  {
+    name: "check_auth_status",
+    description: `Check the user's current authentication and credential state.
+Returns which wallets are connected and what credentials already exist.
+Call this BEFORE starting any authentication flow to avoid redundant steps.
+Also useful when the user asks "what do I have?" or "am I connected?"`,
+    inputSchema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "lookup_credential_by_type",
+    description: `Look up whether the user already has a credential of a specific type.
+Returns the credential details if found, or null if they don't have one.
+Use this when the user asks to verify/check their own credential for a specific platform.`,
+    inputSchema: {
+      type: "object",
+      properties: {
+        credentialType: {
+          type: "string",
+          enum: [
+            "btc_tier",
+            "wallet_age",
+            "eth_holder",
+            "github_dev",
+            "codeforces_coder",
+            "steam_gamer",
+            "strava_athlete",
+          ],
+          description: "Type of credential to look up",
+        },
+      },
+      required: ["credentialType"],
+    },
+  },
+  {
+    name: "revoke_credential",
+    description: `Revoke an existing credential. This removes the credential from the user's local storage.
+Use when the user wants to delete or revoke one of their credentials.
+Note: on-chain revocation requires a separate contract call.`,
+    inputSchema: {
+      type: "object",
+      properties: {
+        credentialId: {
+          type: "string",
+          description: "The credential ID to revoke",
+        },
+      },
+      required: ["credentialId"],
     },
   },
 ];

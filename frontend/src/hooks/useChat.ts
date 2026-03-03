@@ -187,6 +187,9 @@ function getToolDescription(toolName: string): string {
     verify_credential: "verify the credential",
     connect_starknet_wallet: "connect your Starknet wallet",
     mint_badge_nft: "mint your badge NFT",
+    check_auth_status: "check your current status",
+    lookup_credential_by_type: "look up your credential",
+    revoke_credential: "revoke the credential",
   };
   return descriptions[toolName] || "process your request";
 }

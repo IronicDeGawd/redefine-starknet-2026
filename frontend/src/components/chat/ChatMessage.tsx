@@ -6,6 +6,7 @@ import type { Message } from "@/stores/useAppStore";
 import { ToolAction } from "./ToolAction";
 import { TierIcon } from "@/components/credential/TierBadge";
 import { TIER_NAMES, type Tier, type CredentialType } from "@/types/credential";
+import { CREDENTIAL_CONFIG } from "@/lib/badges/config";
 import { Bot, User, CheckCircle2, ExternalLink } from "lucide-react";
 
 interface ChatMessageProps {
@@ -124,7 +125,7 @@ function CredentialSuccess({ data }: { data: CredentialSuccessData }) {
               {TIER_NAMES[data.tier]} Tier
             </p>
             <p className="text-sm text-[var(--text-muted)]">
-              {data.type === "btc_tier" ? "BTC Holdings Credential" : "Wallet Age Credential"}
+              {CREDENTIAL_CONFIG[data.type]?.label ?? data.type} Credential
             </p>
           </div>
         </div>
