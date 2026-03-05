@@ -245,8 +245,11 @@ redefine-hackathon-2026/
 
 | Contract | Sepolia Address |
 |---|---|
-| CredentialRegistry | [`0xab5fbd...e1038`](https://sepolia.voyager.online/contract/0xab5fbdd27cc7e4d337742295d62c986489d6e36f1020009bffa7935f9e1038) |
-| CredentialVerifier | [`0x22a8cf...e3a4`](https://sepolia.voyager.online/contract/0x22a8cfb1aa5383fd39f6c3db717770905379a3531457b75bd1e56917392e3a4) |
+| CredentialRegistry | [`0x30dffe...3bc93`](https://sepolia.voyager.online/contract/0x30dffe5b1a71bab0da2cc639d117f54b9c90cfdc0b12e9ecce4b4b12893bc93) |
+| CredentialVerifier | [`0x6b03b2...251d`](https://sepolia.voyager.online/contract/0x6b03b228cc65f4fc63c60dfc03b781085f85e3db5c2567c5f2bb56d8662251d) |
+| CredentialMerkle | [`0x7a03d3...3b57`](https://sepolia.voyager.online/contract/0x7a03d3644a5328025abcf3dc78b38664b7c8a62d01c86429d518db259c83b57) |
+| RangeProofVerifier | [`0x54886d...6bc9`](https://sepolia.voyager.online/contract/0x54886d18ffbaab3e026b39ff6b1f41e26caa0531e20eeb0cf181d0068ec6bc9) |
+| BadgeNFT (Soulbound) | [`0x4abf82...f282`](https://sepolia.voyager.online/contract/0x4abf82ef753033b9959077ab8275b008651c38cbe52f9a07d282a0ba74df282) |
 
 ---
 
