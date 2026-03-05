@@ -76,7 +76,7 @@ export default function PassportPage() {
     }
   };
 
-  const explorerUrl = process.env.NEXT_PUBLIC_EXPLORER_URL || "https://sepolia.starkscan.co";
+  const explorerUrl = process.env.NEXT_PUBLIC_EXPLORER_URL || "https://sepolia.voyager.online";
 
   return (
     <div className="flex-1 p-6 md:p-8">

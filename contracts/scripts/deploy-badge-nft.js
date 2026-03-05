@@ -124,7 +124,7 @@ async function main() {
   console.log(`BADGE_NFT_ADDRESS=${badgeAddress}`);
   console.log(`NEXT_PUBLIC_BADGE_NFT_ADDRESS=${badgeAddress}`);
   console.log("\n--- View on explorer ---");
-  console.log(`https://sepolia.starkscan.co/contract/${badgeAddress}`);
+  console.log(`https://sepolia.voyager.online/contract/${badgeAddress}`);
 }
 
 main().catch((e) => {

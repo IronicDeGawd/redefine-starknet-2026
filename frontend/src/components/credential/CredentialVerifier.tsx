@@ -215,7 +215,7 @@ function ValidCredentialResult({
         <Button
           variant="secondary"
           onClick={() =>
-            window.open(`https://sepolia.starkscan.co/search/${credential.id}`, "_blank")
+            window.open(`https://sepolia.voyager.online/search/${credential.id}`, "_blank")
           }
           className="w-full"
         >

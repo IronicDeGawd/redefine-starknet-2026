@@ -141,7 +141,7 @@ function CredentialSuccess({ data }: { data: CredentialSuccessData }) {
             <div className="flex items-center justify-between text-sm">
               <span className="text-[var(--text-muted)]">Transaction</span>
               <a
-                href={`https://sepolia.starkscan.co/tx/${data.transactionHash}`}
+                href={`https://sepolia.voyager.online/tx/${data.transactionHash}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1 font-mono text-[var(--primary)] hover:underline text-xs"

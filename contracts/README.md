@@ -83,8 +83,8 @@ CREDENTIAL_VERIFIER_ADDRESS=<deployed_verifier_address>
 | Owner Account | `0x07fc0b2781635bb9d2f71816433e674837e46c9aa451056e193c1e02aa9daa69` |
 
 View on Starkscan:
-- [CredentialRegistry](https://sepolia.starkscan.co/contract/0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216)
-- [CredentialVerifier](https://sepolia.starkscan.co/contract/0x07d69c729df6c1ac6d2c011a6e740fb23ea924928dcacb8f2f1a6c6c5b4f34e2)
+- [CredentialRegistry](https://sepolia.voyager.online/contract/0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216)
+- [CredentialVerifier](https://sepolia.voyager.online/contract/0x07d69c729df6c1ac6d2c011a6e740fb23ea924928dcacb8f2f1a6c6c5b4f34e2)
 
 ## Contract Architecture
 

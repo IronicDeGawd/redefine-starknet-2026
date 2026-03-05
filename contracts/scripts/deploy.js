@@ -171,10 +171,10 @@ async function main() {
   console.log(`CREDENTIAL_MERKLE_ADDRESS=${merkleAddress}`);
   console.log(`RANGE_PROOF_VERIFIER_ADDRESS=${rangeProofAddress}`);
   console.log("\n--- View on explorer ---");
-  console.log(`https://sepolia.starkscan.co/contract/${registryAddress}`);
-  console.log(`https://sepolia.starkscan.co/contract/${verifierAddress}`);
-  console.log(`https://sepolia.starkscan.co/contract/${merkleAddress}`);
-  console.log(`https://sepolia.starkscan.co/contract/${rangeProofAddress}`);
+  console.log(`https://sepolia.voyager.online/contract/${registryAddress}`);
+  console.log(`https://sepolia.voyager.online/contract/${verifierAddress}`);
+  console.log(`https://sepolia.voyager.online/contract/${merkleAddress}`);
+  console.log(`https://sepolia.voyager.online/contract/${rangeProofAddress}`);
 }
 
 main().catch((e) => {

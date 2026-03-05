@@ -841,7 +841,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
                     )}
                     {result.transactionHash && (
                         <a
-                            href={`https://sepolia.starkscan.co/tx/${result.transactionHash}`}
+                            href={`https://sepolia.voyager.online/tx/${result.transactionHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-[var(--accent-primary)] hover:underline block mt-1"

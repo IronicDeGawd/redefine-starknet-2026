@@ -245,8 +245,8 @@ redefine-hackathon-2026/
 
 | Contract | Sepolia Address |
 |---|---|
-| CredentialRegistry | [`0xab5fbd...e1038`](https://sepolia.starkscan.co/contract/0xab5fbdd27cc7e4d337742295d62c986489d6e36f1020009bffa7935f9e1038) |
-| CredentialVerifier | [`0x22a8cf...e3a4`](https://sepolia.starkscan.co/contract/0x22a8cfb1aa5383fd39f6c3db717770905379a3531457b75bd1e56917392e3a4) |
+| CredentialRegistry | [`0xab5fbd...e1038`](https://sepolia.voyager.online/contract/0xab5fbdd27cc7e4d337742295d62c986489d6e36f1020009bffa7935f9e1038) |
+| CredentialVerifier | [`0x22a8cf...e3a4`](https://sepolia.voyager.online/contract/0x22a8cfb1aa5383fd39f6c3db717770905379a3531457b75bd1e56917392e3a4) |
 
 ---
 

@@ -21,7 +21,7 @@ export function MintBadgeButton({ credential, onMinted }: MintBadgeButtonProps) 
         size="sm"
         onClick={() =>
           window.open(
-            `https://sepolia.starkscan.co/nft/${credential.nftTokenId}`,
+            `https://sepolia.voyager.online/nft/${credential.nftTokenId}`,
             "_blank"
           )
         }

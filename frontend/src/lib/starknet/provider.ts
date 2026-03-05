@@ -33,7 +33,7 @@ export function getExplorerTxUrl(txHash: string): string {
   const baseUrl =
     network === "mainnet"
       ? "https://starkscan.co"
-      : "https://sepolia.starkscan.co";
+      : "https://sepolia.voyager.online";
   return `${baseUrl}/tx/${txHash}`;
 }
 
@@ -45,6 +45,6 @@ export function getExplorerContractUrl(address: string): string {
   const baseUrl =
     network === "mainnet"
       ? "https://starkscan.co"
-      : "https://sepolia.starkscan.co";
+      : "https://sepolia.voyager.online";
   return `${baseUrl}/contract/${address}`;
 }

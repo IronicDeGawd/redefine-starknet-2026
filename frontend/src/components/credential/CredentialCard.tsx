@@ -233,7 +233,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke, onMi
             variant="outline"
             onClick={() =>
               window.open(
-                `https://sepolia.starkscan.co/search/${credential.id}`,
+                `https://sepolia.voyager.online/search/${credential.id}`,
                 "_blank"
               )
             }
