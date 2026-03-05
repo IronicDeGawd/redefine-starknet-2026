@@ -1,5 +1,8 @@
 # Context folder (local research, plans, working docs)
 context/
+
+# Local demo script (gitignored — keep private)
+demo-script.md
 .claude/
 
 # Environment variables
