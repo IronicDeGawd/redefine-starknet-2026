@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AppShell } from "@/components/layout/AppShell";
+import { Toaster } from "sonner";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -16,24 +17,26 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "ZKCred — Privacy Credentials for Bitcoin",
+  title: "ZKCred — Multi-Platform Privacy Credentials",
   description:
-    "Create privacy-preserving credentials for your Bitcoin holdings on Starknet. Prove your tier without revealing your wallet.",
+    "Create privacy-preserving credentials for Bitcoin, Ethereum, GitHub, Codeforces, Steam, and Strava on Starknet. Prove your reputation without revealing personal data.",
   keywords: [
     "Bitcoin",
+    "Ethereum",
+    "GitHub",
     "Starknet",
     "ZK",
     "Zero Knowledge",
     "Privacy",
     "Credentials",
-    "DeFi",
-    "Crypto",
+    "Reputation",
+    "Multi-credential",
   ],
   authors: [{ name: "ZKCred Team" }],
   openGraph: {
-    title: "ZKCred — Privacy Credentials for Bitcoin",
+    title: "ZKCred — Multi-Platform Privacy Credentials",
     description:
-      "Create privacy-preserving credentials for your Bitcoin holdings on Starknet.",
+      "Create privacy-preserving credentials across 6 platforms on Starknet.",
     type: "website",
   },
 };
@@ -50,6 +53,7 @@ export default function RootLayout({
     >
       <body className="antialiased bg-[var(--background-secondary)]">
         <AppShell>{children}</AppShell>
+        <Toaster position="bottom-right" richColors />
       </body>
     </html>
   );

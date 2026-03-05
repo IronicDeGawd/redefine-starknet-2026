@@ -64,30 +64,25 @@ const OFF_TOPIC_PATTERNS = [
 
 // Allowed topics related to ZKCred
 const ALLOWED_TOPIC_KEYWORDS = [
-  "credential",
-  "wallet",
-  "bitcoin",
-  "btc",
-  "tier",
-  "shrimp",
-  "crab",
-  "fish",
-  "whale",
-  "verify",
-  "verification",
-  "proof",
-  "zk",
-  "zero knowledge",
-  "privacy",
-  "starknet",
-  "sign",
-  "signature",
-  "connect",
-  "holdings",
-  "balance",
-  "address",
-  "pubkey",
-  "public key",
+  // Core
+  "credential", "wallet", "tier", "badge", "nft", "mint",
+  "verify", "verification", "proof", "zk", "zero knowledge",
+  "privacy", "starknet", "sign", "signature", "connect",
+  "holdings", "balance", "address", "pubkey", "public key",
+  // Bitcoin
+  "bitcoin", "btc", "shrimp", "crab", "fish", "whale", "xverse",
+  // Ethereum
+  "ethereum", "eth", "metamask", "dust", "holder", "stacker",
+  // GitHub
+  "github", "repos", "stars", "contributions", "developer", "seedling", "trophy",
+  // Codeforces
+  "codeforces", "rating", "competitive", "programming", "specialist", "expert", "master", "newbie",
+  // Steam
+  "steam", "games", "playtime", "gamer", "casual", "hardcore", "legend",
+  // Strava
+  "strava", "running", "distance", "athlete", "sneaker", "runner", "mountain", "peak",
+  // OAuth
+  "oauth", "login", "authenticate",
 ];
 
 /**
@@ -145,7 +140,7 @@ export function filterUserInput(content: string): FilterResult {
     return {
       allowed: false,
       reason:
-        "I can only help with ZKCred-related questions about Bitcoin credentials and privacy proofs.",
+        "I can only help with ZKCred-related questions about privacy-preserving credentials and proofs.",
     };
   }
 
@@ -154,7 +149,7 @@ export function filterUserInput(content: string): FilterResult {
     return {
       allowed: false,
       reason:
-        "I'm specialized in helping with ZKCred - creating and verifying Bitcoin holding credentials. How can I help you with that?",
+        "I'm specialized in helping with ZKCred - creating and verifying privacy-preserving credentials. How can I help you with that?",
     };
   }
 

@@ -6,19 +6,23 @@ import { hash, num, shortString } from "starknet";
 import { Verifier } from "bip322-js";
 
 /**
- * Hash a BTC public key using Poseidon for Starknet compatibility
+ * Hash an identifier using Poseidon for Starknet compatibility.
+ * Accepts hex strings (BTC pubkeys, ETH addresses) and plain-text
+ * identifiers (GitHub username, Codeforces handle, etc.).
  */
-export function hashPubkey(pubkey: string): string {
-  // Remove 0x prefix if present
-  const cleanPubkey = pubkey.startsWith("0x") ? pubkey.slice(2) : pubkey;
+export function hashPubkey(identifier: string): string {
+  // Convert to hex bytes: if already hex use as-is, otherwise encode UTF-8
+  let hexStr: string;
+  if (/^(0x)?[0-9a-fA-F]+$/.test(identifier)) {
+    hexStr = identifier.startsWith("0x") ? identifier.slice(2) : identifier;
+  } else {
+    hexStr = Buffer.from(identifier, "utf-8").toString("hex");
+  }
 
-  // Split pubkey into chunks that fit in felt252 (< 2^251)
-  // A BTC pubkey is 33 bytes (compressed) or 65 bytes (uncompressed)
-  // We split into 32-byte chunks and hash together
+  // Split into chunks that fit in felt252 (31 bytes = 62 hex chars)
   const chunks: string[] = [];
-  for (let i = 0; i < cleanPubkey.length; i += 62) {
-    // 31 bytes = 62 hex chars
-    chunks.push("0x" + cleanPubkey.slice(i, i + 62).padEnd(62, "0"));
+  for (let i = 0; i < hexStr.length; i += 62) {
+    chunks.push("0x" + hexStr.slice(i, i + 62).padEnd(62, "0"));
   }
 
   // Use Poseidon hash for ZK-friendliness
@@ -50,6 +54,21 @@ export function generateCredentialId(
     BigInt(tier),
     BigInt(salt),
   ]);
+}
+
+/**
+ * Extract credential ID from a Starknet transaction receipt.
+ * The CredentialIssued event has credential_id as a #[key] field,
+ * so it appears at keys[1] (keys[0] is the event selector hash).
+ */
+export function extractCredentialIdFromReceipt(
+  receipt: unknown
+): string | undefined {
+  const r = receipt as { events?: Array<{ keys?: string[]; data?: string[] }> };
+  if (!r.events?.length) return undefined;
+  const selector = hash.getSelectorFromName("CredentialIssued");
+  const event = r.events.find((e) => e.keys?.[0] === selector);
+  return event?.keys?.[1];
 }
 
 /**
@@ -121,9 +140,9 @@ export function verifyBitcoinSignature(
   address: string
 ): boolean {
   try {
-    // Skip verification for mock signatures (development/testing)
-    if (signature.startsWith("mock_signature_")) {
-      console.warn("Accepting mock signature for development");
+    // [1.1 FIX] Mock signatures ONLY in development — never in production
+    if (process.env.NODE_ENV === "development" && signature.startsWith("mock_signature_")) {
+      console.warn("[DEV ONLY] Accepting mock signature");
       return true;
     }
 

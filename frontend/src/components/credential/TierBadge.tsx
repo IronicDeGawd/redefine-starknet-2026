@@ -1,7 +1,8 @@
 "use client";
 
 import { cn } from "@/lib/cn";
-import { TIER_NAMES, TIER_RANGES, type Tier } from "@/types/credential";
+import { TIER_NAMES, TIER_RANGES, type Tier, type CredentialType } from "@/types/credential";
+import { CREDENTIAL_CONFIG } from "@/lib/badges/config";
 import { CircleDot, Hexagon, Diamond, Crown, type LucideIcon } from "lucide-react";
 
 // Lucide icons for each tier (using abstract shapes for consistent style)
@@ -42,9 +43,17 @@ const tierStyles: Record<Tier, { bg: string; iconBg: string; text: string; icon:
 
 interface TierBadgeProps {
   tier: Tier;
+  credentialType?: CredentialType;
   size?: "sm" | "md" | "lg";
   showRange?: boolean;
   variant?: "default" | "filled";
+}
+
+function getTierName(tier: Tier, credentialType?: CredentialType): string {
+  if (credentialType && CREDENTIAL_CONFIG[credentialType]) {
+    return CREDENTIAL_CONFIG[credentialType].tiers[tier].name;
+  }
+  return TIER_NAMES[tier];
 }
 
 const sizes = {
@@ -68,7 +77,7 @@ const sizes = {
   },
 };
 
-export function TierBadge({ tier, size = "md", showRange = false, variant = "default" }: TierBadgeProps) {
+export function TierBadge({ tier, credentialType, size = "md", showRange = false, variant = "default" }: TierBadgeProps) {
   const style = tierStyles[tier];
   const sizeStyle = sizes[size];
   const Icon = TIER_ICONS[tier];
@@ -85,7 +94,7 @@ export function TierBadge({ tier, size = "md", showRange = false, variant = "def
         <Icon className={cn(sizeStyle.icon, style.icon)} />
         <div className="flex flex-col">
           <span className={cn("font-semibold leading-tight", style.text, sizeStyle.name)}>
-            {TIER_NAMES[tier]}
+            {getTierName(tier, credentialType)}
           </span>
           {showRange && (
             <span className={cn("opacity-70 leading-tight", style.text, sizeStyle.range)}>
@@ -109,7 +118,7 @@ export function TierBadge({ tier, size = "md", showRange = false, variant = "def
       <Icon className={cn(sizeStyle.icon, style.icon)} />
       <div className="flex flex-col">
         <span className={cn("font-medium leading-tight", style.text, sizeStyle.name)}>
-          {TIER_NAMES[tier]}
+          {getTierName(tier, credentialType)}
         </span>
         {showRange && (
           <span className={cn("opacity-60 leading-tight", style.text, sizeStyle.range)}>
@@ -135,7 +144,7 @@ export function TierBadgeCompact({ tier }: { tier: Tier }) {
       )}
     >
       <Icon className="w-3 h-3" />
-      {TIER_NAMES[tier]}
+      {getTierName(tier)}
     </span>
   );
 }

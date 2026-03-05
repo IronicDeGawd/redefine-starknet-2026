@@ -9,3 +9,4 @@ export {
   updateSessionWallet,
   type ChatSession,
 } from "./session";
+export { cacheCredential, getCachedCredential } from "./credential-cache";

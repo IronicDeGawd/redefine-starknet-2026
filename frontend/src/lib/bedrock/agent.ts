@@ -4,7 +4,8 @@
 
 import { invokeModel, MODEL_ID } from "./client";
 import { SYSTEM_PROMPT, buildToolConfig } from "./tools";
-import type { Message, ToolResultInput, AgentResponse } from "@/types/agent";
+import type { ToolResultInput, AgentResponse } from "@/types/agent";
+import type { ChatMessage } from "@/types/api";
 import type {
   ContentBlock,
   Message as BedrockMessage,
@@ -14,7 +15,7 @@ import type {
  * Invoke the AI agent with conversation messages
  */
 export async function invokeAgent(
-  messages: Message[],
+  messages: ChatMessage[],
   toolResults?: ToolResultInput[]
 ): Promise<AgentResponse> {
   // Build conversation messages for Bedrock
@@ -40,18 +41,55 @@ export async function invokeAgent(
 }
 
 /**
- * Build Bedrock message format from our messages
+ * Build Bedrock message format from our messages.
+ *
+ * Bedrock Converse API requires strict alternating user/assistant messages.
+ * Tool interactions must follow this pattern:
+ *   assistant: { toolUse: { ... } }
+ *   user:      { toolResult: { ... } }
  */
 function buildMessages(
-  messages: Message[],
+  messages: ChatMessage[],
   toolResults?: ToolResultInput[]
 ): BedrockMessage[] {
-  const formatted: BedrockMessage[] = messages.map((msg) => ({
-    role: msg.role,
-    content: [{ text: msg.content }],
-  }));
+  const formatted: BedrockMessage[] = [];
 
-  // Add tool results if present
+  for (const msg of messages) {
+    if (msg.role === "assistant" && msg.toolUse) {
+      // Assistant message with a tool call — include both text and toolUse blocks
+      const content: ContentBlock[] = [];
+      if (msg.content) {
+        content.push({ text: msg.content });
+      }
+      content.push({
+        toolUse: {
+          toolUseId: msg.toolUse.id,
+          name: msg.toolUse.name,
+          input: msg.toolUse.input || {},
+        },
+      } as ContentBlock);
+      formatted.push({ role: "assistant", content });
+    } else if (msg.role === "user" && msg.toolResult) {
+      // User message containing a tool result
+      formatted.push({
+        role: "user",
+        content: [{
+          toolResult: {
+            toolUseId: msg.toolResult.toolUseId,
+            content: [{ json: msg.toolResult.result }],
+          },
+        }] as ContentBlock[],
+      });
+    } else {
+      // Regular text message
+      formatted.push({
+        role: msg.role,
+        content: [{ text: msg.content || " " }],
+      });
+    }
+  }
+
+  // Append pending tool results (for the current turn)
   if (toolResults && toolResults.length > 0) {
     formatted.push({
       role: "user",
@@ -64,7 +102,32 @@ function buildMessages(
     });
   }
 
-  return formatted;
+  // Bedrock requires alternating roles — merge consecutive same-role messages
+  return mergeConsecutiveRoles(formatted);
+}
+
+/**
+ * Merge consecutive messages with the same role into one message.
+ * Bedrock Converse API requires strict alternating user/assistant.
+ */
+function mergeConsecutiveRoles(messages: BedrockMessage[]): BedrockMessage[] {
+  if (messages.length === 0) return [];
+
+  const merged: BedrockMessage[] = [messages[0]];
+
+  for (let i = 1; i < messages.length; i++) {
+    const prev = merged[merged.length - 1];
+    const curr = messages[i];
+
+    if (prev.role === curr.role) {
+      // Merge content blocks
+      prev.content = [...(prev.content || []), ...(curr.content || [])];
+    } else {
+      merged.push(curr);
+    }
+  }
+
+  return merged;
 }
 
 /**

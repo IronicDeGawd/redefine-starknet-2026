@@ -6,6 +6,7 @@ import { Contract, Account, ProviderInterface, type Abi } from "starknet";
 import { getProvider } from "./provider";
 import { getServerAccount } from "./account";
 import { CREDENTIAL_REGISTRY_ABI } from "./abi/credential-registry";
+import { BADGE_NFT_ABI } from "./abi/badge-nft";
 
 /**
  * Get the CredentialRegistry contract address
@@ -65,4 +66,38 @@ export function getCredentialRegistry(
  */
 export function isRegistryConfigured(): boolean {
   return !!process.env.CREDENTIAL_REGISTRY_ADDRESS;
+}
+
+// ============ BadgeNFT ============
+
+function getBadgeNFTAddress(): string {
+  const address = process.env.BADGE_NFT_ADDRESS;
+  if (!address) {
+    throw new Error("BADGE_NFT_ADDRESS must be set");
+  }
+  return address;
+}
+
+export function getBadgeNFTReader(): Contract {
+  const provider = getProvider();
+  const address = getBadgeNFTAddress();
+  return new Contract({
+    abi: BADGE_NFT_ABI as Abi,
+    address,
+    providerOrAccount: provider,
+  });
+}
+
+export function getBadgeNFTWriter(): Contract {
+  const account = getServerAccount();
+  const address = getBadgeNFTAddress();
+  return new Contract({
+    abi: BADGE_NFT_ABI as Abi,
+    address,
+    providerOrAccount: account,
+  });
+}
+
+export function isBadgeNFTConfigured(): boolean {
+  return !!process.env.BADGE_NFT_ADDRESS;
 }

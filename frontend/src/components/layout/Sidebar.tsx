@@ -4,25 +4,31 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
 import {
-  Home,
+  LayoutDashboard,
+  MessageSquare,
   BadgeCheck,
   Shield,
-  Settings,
   BookOpen,
   LogOut,
   FlaskConical,
   Crown,
   Code,
+  Plug,
+  Lock,
+  Fingerprint,
 } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Dashboard", icon: Home },
+  { href: "/", label: "Overview", icon: LayoutDashboard },
+  { href: "/connect", label: "Connect", icon: Plug },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/credentials", label: "Credentials", icon: BadgeCheck },
+  { href: "/passport", label: "Passport", icon: Fingerprint },
   { href: "/verify", label: "Verify", icon: Shield },
   { href: "/playground", label: "Playground", icon: FlaskConical },
   { href: "/lounge", label: "Lounge", icon: Crown },
+  { href: "/crypto", label: "Cryptography", icon: Lock },
   { href: "/examples/discord", label: "Examples", icon: Code },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function Sidebar() {

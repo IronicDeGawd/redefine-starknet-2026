@@ -1,6 +1,6 @@
 "use client";
 
-import { Crown, Diamond, Hexagon, HelpCircle, MessageSquare } from "lucide-react";
+import { Bitcoin, Wallet, Github, HelpCircle, MessageSquare, Eye, Gamepad2 } from "lucide-react";
 
 interface WelcomeScreenProps {
   onQuickAction: (message: string) => void;
@@ -8,33 +8,33 @@ interface WelcomeScreenProps {
 
 const quickActions = [
   {
-    label: "Prove I'm a Whale",
-    message: "I want to prove I hold more than 100 BTC",
-    icon: Crown,
-    color: "text-violet-600",
-    bgColor: "bg-violet-50",
-    hoverBg: "hover:bg-violet-100",
-  },
-  {
-    label: "Prove I'm a Fish",
-    message: "I want to create a Fish tier credential (10-100 BTC)",
-    icon: Diamond,
-    color: "text-blue-600",
-    bgColor: "bg-blue-50",
-    hoverBg: "hover:bg-blue-100",
-  },
-  {
-    label: "Prove I'm a Crab",
-    message: "I want to prove I hold between 1-10 BTC",
-    icon: Hexagon,
+    label: "Prove BTC Holdings",
+    message: "I want to prove my Bitcoin holdings",
+    icon: Bitcoin,
     color: "text-amber-600",
     bgColor: "bg-amber-50",
     hoverBg: "hover:bg-amber-100",
   },
   {
-    label: "How does it work?",
-    message: "How does ZKCred create privacy-preserving credentials?",
-    icon: HelpCircle,
+    label: "Prove GitHub Dev",
+    message: "I want to create a GitHub developer credential",
+    icon: Github,
+    color: "text-violet-600",
+    bgColor: "bg-violet-50",
+    hoverBg: "hover:bg-violet-100",
+  },
+  {
+    label: "Verify Steam Gamer",
+    message: "I want to create a Steam gamer credential",
+    icon: Gamepad2,
+    color: "text-gray-600",
+    bgColor: "bg-gray-50",
+    hoverBg: "hover:bg-gray-100",
+  },
+  {
+    label: "Check My Credentials",
+    message: "What credentials do I already have?",
+    icon: Eye,
     color: "text-emerald-600",
     bgColor: "bg-emerald-50",
     hoverBg: "hover:bg-emerald-100",
@@ -43,11 +43,11 @@ const quickActions = [
 
 export function WelcomeScreen({ onQuickAction }: WelcomeScreenProps) {
   return (
-    <div className="max-w-2xl mx-auto py-12 px-4">
+    <div className="max-w-2xl mx-auto py-6 px-4 flex flex-col items-center justify-center h-full">
       {/* Hero */}
-      <div className="text-center mb-10">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-lg mb-5">
-          <MessageSquare className="w-8 h-8 text-white" />
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[var(--secondary)] shadow-lg mb-4">
+          <MessageSquare className="w-7 h-7 text-white" />
         </div>
 
         <h1 className="text-2xl md:text-3xl font-bold text-[var(--text-primary)] mb-3">

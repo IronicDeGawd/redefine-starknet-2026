@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/cn";
-import { Home, BadgeCheck, Shield, Settings } from "lucide-react";
+import { LayoutDashboard, MessageSquare, BadgeCheck, Shield, Plug } from "lucide-react";
 
 const navItems = [
-  { href: "/", label: "Home", icon: Home },
+  { href: "/", label: "Home", icon: LayoutDashboard },
+  { href: "/chat", label: "Chat", icon: MessageSquare },
+  { href: "/connect", label: "Connect", icon: Plug },
   { href: "/credentials", label: "Creds", icon: BadgeCheck },
   { href: "/verify", label: "Verify", icon: Shield },
-  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export function MobileNav() {

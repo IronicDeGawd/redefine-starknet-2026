@@ -4,15 +4,19 @@ import { useState } from "react";
 import { cn } from "@/lib/cn";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { TierIcon } from "./TierBadge";
+import { PixelBadge } from "./PixelBadge";
+import { MintBadgeButton } from "./MintBadgeButton";
 import type { Credential, Tier } from "@/types/credential";
-import { TIER_NAMES, TIER_RANGES } from "@/types/credential";
+import { CREDENTIAL_CONFIG, getBadgeInfo } from "@/lib/badges/config";
 import { Copy, ExternalLink, Share2, Trash2, Check, Shield, CheckCircle2 } from "lucide-react";
+
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 interface CredentialCardProps {
   credential: Credential;
   variant?: "compact" | "full";
   onRevoke?: () => void;
+  onMinted?: (tokenId: string) => void;
 }
 
 const tierCardBg: Record<Tier, string> = {
@@ -22,8 +26,13 @@ const tierCardBg: Record<Tier, string> = {
   3: "bg-gradient-to-br from-[var(--tier-whale-bg)] to-white",
 };
 
-export function CredentialCard({ credential, variant = "compact", onRevoke }: CredentialCardProps) {
+export function CredentialCard({ credential, variant = "compact", onRevoke, onMinted }: CredentialCardProps) {
   const [copied, setCopied] = useState(false);
+  const config = CREDENTIAL_CONFIG[credential.credentialType];
+  const isRecovered = credential.id.startsWith("recovered:");
+  const tierInfo = isRecovered
+    ? { name: "Issued", image: getBadgeInfo(credential.credentialType, 0).image }
+    : getBadgeInfo(credential.credentialType, credential.tier);
 
   const copyId = async () => {
     await navigator.clipboard.writeText(credential.id);
@@ -32,11 +41,11 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
   };
 
   const shareCredential = async () => {
-    const url = `${window.location.origin}/verify?id=${credential.id}`;
+    const url = `${window.location.origin}${BASE_PATH}/verify?id=${credential.id}`;
     if (navigator.share) {
       await navigator.share({
-        title: `ZKCred ${TIER_NAMES[credential.tier]} Credential`,
-        text: `Verify my ${TIER_NAMES[credential.tier]} tier credential`,
+        title: `ZKCred ${tierInfo.name} Credential`,
+        text: `Verify my ${tierInfo.name} tier credential`,
         url,
       });
     } else {
@@ -64,18 +73,21 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
         )}
       >
         <div className="relative p-5">
-          {/* Icon & Tier */}
+          {/* Badge & Tier */}
           <div className="text-center mb-4">
             <div className="flex justify-center mb-3">
-              <TierIcon tier={credential.tier} size="lg" />
+              <PixelBadge
+                credentialType={credential.credentialType}
+                tier={credential.tier}
+                size="lg"
+              />
             </div>
             <h3 className="text-lg font-bold text-[var(--text-primary)]">
-              {TIER_NAMES[credential.tier]} Tier
+              {tierInfo.name} Tier
             </h3>
             <p className="text-sm text-[var(--text-secondary)]">
-              {credential.credentialType === "btc_tier" ? "BTC Holdings" : "Wallet Age"}
+              {config.label}
             </p>
-            <p className="text-xs text-[var(--text-muted)]">{TIER_RANGES[credential.tier]}</p>
           </div>
 
           {/* Status & Date */}
@@ -140,15 +152,19 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
         {/* Header */}
         <div className="text-center mb-6 pt-4">
           <div className="flex justify-center mb-4">
-            <TierIcon tier={credential.tier} size="lg" />
+            <PixelBadge
+              credentialType={credential.credentialType}
+              tier={credential.tier}
+              size="lg"
+            />
           </div>
           <h2 className="text-2xl font-bold text-[var(--text-primary)] mb-1">
-            {TIER_NAMES[credential.tier]} Tier
+            {tierInfo.name} Tier
           </h2>
           <p className="text-[var(--text-secondary)]">
-            {credential.credentialType === "btc_tier" ? "BTC Holdings" : "Wallet Age"}
+            {config.label}
           </p>
-          <p className="text-sm text-[var(--text-muted)]">{TIER_RANGES[credential.tier]}</p>
+          <p className="text-sm text-[var(--text-muted)]">{config.description}</p>
         </div>
 
         {/* Credential ID */}
@@ -171,8 +187,8 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
 
         {/* Details */}
         <div className="space-y-3 mb-6">
-          <DetailRow label="Type" value={credential.credentialType} />
-          <DetailRow label="Tier" value={`${credential.tier} (${TIER_NAMES[credential.tier]})`} />
+          <DetailRow label="Type" value={config.label} />
+          <DetailRow label="Tier" value={isRecovered ? "Recovered (tier unknown)" : `${credential.tier} (${tierInfo.name})`} />
           <DetailRow label="Issued" value={formatDate(credential.issuedAt)} />
           <DetailRow
             label="Status"
@@ -200,8 +216,8 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
             What this proves
           </h4>
           <ul className="space-y-2">
-            <ProofItem text="Holder controls a Bitcoin wallet" />
-            <ProofItem text={`Holdings verified in ${TIER_RANGES[credential.tier]} range`} />
+            <ProofItem text={`Verified ${config.label} credential`} />
+            <ProofItem text={isRecovered ? "Credential recovered from chain" : `Tier ${credential.tier} (${tierInfo.name}) achieved`} />
             <ProofItem text="Credential issued on Starknet blockchain" />
           </ul>
         </div>
@@ -212,6 +228,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke }: Cr
             <Share2 className="w-4 h-4" />
             Share Link
           </Button>
+          <MintBadgeButton credential={credential} onMinted={onMinted} />
           <Button
             variant="outline"
             onClick={() =>

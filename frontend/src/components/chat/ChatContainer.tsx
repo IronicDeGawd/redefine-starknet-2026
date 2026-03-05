@@ -9,12 +9,24 @@ import { WelcomeScreen } from "./WelcomeScreen";
 
 export function ChatContainer() {
   const { messages, isAgentThinking, sendMessage, submitToolResult } = useChat();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const lastMessageCountRef = useRef(0);
 
-  // Auto-scroll to bottom on new messages
+  // Scroll so the newest message is visible near the top of the viewport
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isAgentThinking]);
+    if (messages.length > lastMessageCountRef.current) {
+      const area = scrollAreaRef.current;
+      if (area) {
+        // Find the last message element and scroll it into view at the start
+        const messageElements = area.querySelectorAll("[data-chat-message]");
+        const lastEl = messageElements[messageElements.length - 1];
+        if (lastEl) {
+          lastEl.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
+    }
+    lastMessageCountRef.current = messages.length;
+  }, [messages.length]);
 
   const handleToolAction = async (toolId: string, action: string, data?: unknown) => {
     await submitToolResult(toolId, data, true);
@@ -23,22 +35,21 @@ export function ChatContainer() {
   return (
     <div className="flex flex-col h-full">
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
+      <div ref={scrollAreaRef} className="flex-1 overflow-y-auto px-4 md:px-6 py-6">
         {messages.length === 0 ? (
           <WelcomeScreen onQuickAction={sendMessage} />
         ) : (
           <div className="max-w-3xl mx-auto space-y-6">
             {messages.map((message) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                onToolAction={handleToolAction}
-              />
+              <div key={message.id} data-chat-message>
+                <ChatMessage
+                  message={message}
+                  onToolAction={handleToolAction}
+                />
+              </div>
             ))}
 
             {isAgentThinking && <ThinkingIndicator />}
-
-            <div ref={messagesEndRef} />
           </div>
         )}
       </div>

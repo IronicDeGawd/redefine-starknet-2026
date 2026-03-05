@@ -36,6 +36,7 @@ export const CREDENTIAL_REGISTRY_ABI = [
           { name: "salt", type: "core::felt252" },
           { name: "verification_hash", type: "core::felt252" },
           { name: "oracle_provider", type: "core::felt252" },
+          { name: "commitment", type: "core::felt252" },
         ],
         outputs: [{ type: "core::felt252" }],
         state_mutability: "external",
@@ -57,7 +58,10 @@ export const CREDENTIAL_REGISTRY_ABI = [
       {
         type: "function",
         name: "is_issued",
-        inputs: [{ name: "pubkey_hash", type: "core::felt252" }],
+        inputs: [
+          { name: "pubkey_hash", type: "core::felt252" },
+          { name: "credential_type", type: "core::felt252" },
+        ],
         outputs: [{ type: "core::bool" }],
         state_mutability: "view",
       },

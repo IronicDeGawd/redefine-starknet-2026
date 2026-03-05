@@ -9,6 +9,8 @@ import type { CredentialType, Tier, CredentialStatus } from "./credential";
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
+  toolUse?: ToolUse;
+  toolResult?: { toolUseId: string; result: unknown };
 }
 
 export interface ToolResult {

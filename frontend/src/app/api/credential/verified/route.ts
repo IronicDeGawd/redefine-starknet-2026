@@ -13,13 +13,17 @@ import {
 import {
   hashPubkey,
   generateRandomSalt,
+  generateCredentialId,
+  extractCredentialIdFromReceipt,
   stringToFelt,
   getErrorMessage,
   parseStarknetError,
   verifyBitcoinSignature,
   hashToFelt,
 } from "@/lib/utils";
+import { cacheCredential } from "@/lib/redis";
 import { verifyBalance, verifyWalletAge } from "@/lib/oracle";
+import { createCommitment } from "@/lib/crypto/commitment";
 import type { ApiError } from "@/types/api";
 
 export const runtime = "nodejs";
@@ -203,35 +207,37 @@ export async function POST(
     const verificationHashFelt = hashToFelt(proofHash);
     const oracleProviderFelt = stringToFelt(oracleProvider);
 
+    // 10a. Create Poseidon commitment (cryptographic binding)
+    const commitment = createCommitment(
+      pubkeyHash,
+      credentialTypeFelt,
+      tier,
+      verificationHashFelt,
+      salt
+    );
+
     const tx = await registry.issue_credential(
       pubkeyHash,
       credentialTypeFelt,
       tier,
       salt,
       verificationHashFelt,
-      oracleProviderFelt
+      oracleProviderFelt,
+      commitment
     );
 
     // 11. Wait for transaction confirmation
     const receipt = await provider.waitForTransaction(tx.transaction_hash);
 
     // 12. Extract credential ID from events
-    let credentialId: string | undefined;
-
-    const receiptWithEvents = receipt as { events?: Array<{ keys?: string[] }> };
-    if (receiptWithEvents.events && receiptWithEvents.events.length > 0) {
-      const issuedEvent = receiptWithEvents.events.find((event) =>
-        event.keys?.some((key) => key.includes("CredentialIssued"))
-      );
-
-      if (issuedEvent && issuedEvent.keys && issuedEvent.keys.length > 1) {
-        credentialId = issuedEvent.keys[1];
-      }
-    }
-
+    let credentialId = extractCredentialIdFromReceipt(receipt);
     if (!credentialId) {
-      credentialId = `computed:${pubkeyHash.slice(0, 16)}`;
+      credentialId = generateCredentialId(pubkeyHash, request.credentialType, tier, salt);
     }
+
+    cacheCredential(pubkeyHash, request.credentialType, {
+      credentialId, tier, tierName, transactionHash: tx.transaction_hash,
+    });
 
     // 13. Return success with verification proof
     return NextResponse.json({

@@ -6,17 +6,25 @@ import { useAppStore } from "@/stores/useAppStore";
 import { CredentialCard } from "@/components/credential/CredentialCard";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { Credential, CredentialType } from "@/types/credential";
+import type { CredentialType } from "@/types/credential";
+import { CREDENTIAL_CONFIG } from "@/lib/badges/config";
+import { PixelBadge } from "@/components/credential/PixelBadge";
 import { Plus, Filter, Grid, List, BadgeCheck } from "lucide-react";
-import { TierIcon } from "@/components/credential/TierBadge";
-import { TIER_NAMES, type Tier } from "@/types/credential";
 import { cn } from "@/lib/cn";
 
 type FilterType = "all" | CredentialType;
 type ViewMode = "grid" | "list";
 
+const FILTER_OPTIONS: { value: FilterType; label: string }[] = [
+  { value: "all", label: "All" },
+  ...Object.entries(CREDENTIAL_CONFIG).map(([key, config]) => ({
+    value: key as CredentialType,
+    label: config.label,
+  })),
+];
+
 export default function CredentialsPage() {
-  const { credentials, removeCredential } = useAppStore();
+  const { credentials, removeCredential, updateCredential } = useAppStore();
   const [filter, setFilter] = useState<FilterType>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
@@ -29,6 +37,10 @@ export default function CredentialsPage() {
     if (confirm("Are you sure you want to remove this credential from your list?")) {
       removeCredential(id);
     }
+  };
+
+  const handleMinted = (credentialId: string, tokenId: string) => {
+    updateCredential(credentialId, { nftTokenId: tokenId });
   };
 
   return (
@@ -44,7 +56,7 @@ export default function CredentialsPage() {
               {credentials.length} credential{credentials.length !== 1 ? "s" : ""} issued
             </p>
           </div>
-          <Link href="/">
+          <Link href="/connect">
             <Button>
               <Plus className="w-4 h-4" />
               New Credential
@@ -56,19 +68,19 @@ export default function CredentialsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
           <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-[var(--text-muted)]" />
-            <div className="flex gap-1 p-1 bg-[var(--bg-secondary)] rounded-lg">
-              {(["all", "btc_tier", "wallet_age"] as FilterType[]).map((f) => (
+            <div className="flex gap-1 p-1 bg-[var(--bg-secondary)] rounded-lg overflow-x-auto">
+              {FILTER_OPTIONS.map((f) => (
                 <button
-                  key={f}
-                  onClick={() => setFilter(f)}
+                  key={f.value}
+                  onClick={() => setFilter(f.value)}
                   className={cn(
-                    "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                    filter === f
+                    "px-3 py-1.5 text-sm font-medium rounded-md transition-colors whitespace-nowrap",
+                    filter === f.value
                       ? "bg-[var(--bg-elevated)] text-[var(--text-primary)]"
                       : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
                   )}
                 >
-                  {f === "all" ? "All" : f === "btc_tier" ? "BTC Tier" : "Wallet Age"}
+                  {f.label}
                 </button>
               ))}
             </div>
@@ -107,6 +119,7 @@ export default function CredentialsPage() {
                 credential={credential}
                 variant={viewMode === "grid" ? "compact" : "full"}
                 onRevoke={() => handleRevoke(credential.id)}
+                onMinted={(tokenId) => handleMinted(credential.id, tokenId)}
               />
             ))}
           </div>
@@ -137,7 +150,7 @@ function EmptyState({
         <p className="text-[var(--text-muted)] mb-6 max-w-sm mx-auto">
           {hasFilter
             ? "Try changing the filter or create a new credential."
-            : "Create your first privacy credential to prove your Bitcoin holdings without revealing your wallet."}
+            : "Create your first privacy credential to prove your achievements without revealing your identity."}
         </p>
         <div className="flex items-center justify-center gap-3">
           {hasFilter && (
@@ -145,7 +158,7 @@ function EmptyState({
               Clear Filter
             </Button>
           )}
-          <Link href="/">
+          <Link href="/connect">
             <Button>
               <Plus className="w-4 h-4" />
               Create Credential
@@ -153,19 +166,21 @@ function EmptyState({
           </Link>
         </div>
 
-        {/* Tier preview */}
+        {/* Badge preview */}
         {!hasFilter && (
           <div className="mt-8 pt-8 border-t border-[var(--border-light)]">
-            <p className="text-sm text-[var(--text-muted)] mb-4">Available tiers:</p>
-            <div className="flex justify-center gap-6">
-              {([0, 1, 2, 3] as Tier[]).map((tier) => (
-                <div key={tier} className="text-center flex flex-col items-center gap-2">
-                  <TierIcon tier={tier} size="md" />
-                  <span className="text-xs text-[var(--text-muted)]">
-                    {TIER_NAMES[tier]}
-                  </span>
-                </div>
-              ))}
+            <p className="text-sm text-[var(--text-muted)] mb-4">Available badges:</p>
+            <div className="flex justify-center gap-4 flex-wrap">
+              {(Object.entries(CREDENTIAL_CONFIG) as [CredentialType, typeof CREDENTIAL_CONFIG[CredentialType]][]).map(
+                ([type, config]) => (
+                  <div key={type} className="text-center flex flex-col items-center gap-2">
+                    <PixelBadge credentialType={type} tier={2} size="md" />
+                    <span className="text-xs text-[var(--text-muted)]">
+                      {config.label}
+                    </span>
+                  </div>
+                )
+              )}
             </div>
           </div>
         )}

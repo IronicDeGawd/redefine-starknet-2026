@@ -20,7 +20,8 @@ import {
   getRateLimitHeaders,
   createErrorResponse,
 } from "@/lib/api";
-import { TIER_NAMES } from "@/types/credential";
+import { getTierName } from "@/lib/badges/config";
+import type { Tier } from "@/types/credential";
 
 export const runtime = "nodejs";
 export const maxDuration = 60; // 60 seconds for batch operations
@@ -162,7 +163,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
           // Parse data
           const tier = Number(result.tier);
           const revoked = Boolean(result.revoked);
-          const tierName = TIER_NAMES[tier as keyof typeof TIER_NAMES] || "Unknown";
+          const credentialType = feltToString(result.credential_type);
+          const tierName = getTierName(credentialType, tier as Tier);
 
           // Check if revoked
           if (revoked) {

@@ -67,6 +67,20 @@ export function isStarknetError(
 }
 
 /**
+ * [3.4 FIX] Robust duplicate credential detection
+ * Checks multiple patterns instead of fragile single-string matching
+ */
+export function isDuplicateError(error: unknown): boolean {
+  const msg = getErrorMessage(error).toLowerCase();
+  return (
+    msg.includes("already issued") ||
+    msg.includes("credential already") ||
+    msg.includes("duplicate") ||
+    msg.includes("already exists")
+  );
+}
+
+/**
  * Parse Starknet error for user-friendly message
  */
 export function parseStarknetError(error: unknown): string {

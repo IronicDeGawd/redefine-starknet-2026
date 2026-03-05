@@ -84,14 +84,15 @@ const ENDPOINTS: EndpointDef[] = [
   },
 ];
 
-const DEMO_API_KEY = "zkcred_demo_playground_key";
+const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const DEMO_API_KEY = "zkcred_test_demo123";
 const SAMPLE_CREDENTIAL_ID = "0x1234abcd5678ef901234abcd5678ef901234abcd5678ef901234abcd5678ef90";
 const TIER_OPTIONS = [
   { value: "", label: "None (optional)" },
-  { value: "0", label: "0 - Shrimp" },
-  { value: "1", label: "1 - Crab" },
-  { value: "2", label: "2 - Fish" },
-  { value: "3", label: "3 - Whale" },
+  { value: "0", label: "Tier 0 — Entry" },
+  { value: "1", label: "Tier 1 — Intermediate" },
+  { value: "2", label: "Tier 2 — Advanced" },
+  { value: "3", label: "Tier 3 — Elite" },
 ];
 
 /* -------------------------------------------------- */
@@ -217,7 +218,7 @@ export default function PlaygroundPage() {
     const start = performance.now();
 
     try {
-      const url = buildUrl(endpoint, credentialId);
+      const url = `${BASE_PATH}${buildUrl(endpoint, credentialId)}`;
       const headers: Record<string, string> = {};
       if (endpoint.requiresAuth) {
         headers["X-API-Key"] = DEMO_API_KEY;

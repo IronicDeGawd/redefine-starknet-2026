@@ -2,6 +2,7 @@ export {
   hashPubkey,
   generateRandomSalt,
   generateCredentialId,
+  extractCredentialIdFromReceipt,
   stringToFelt,
   feltToString,
   formatCredentialId,
@@ -26,5 +27,6 @@ export {
   Errors,
   getErrorMessage,
   isStarknetError,
+  isDuplicateError,
   parseStarknetError,
 } from "./errors";

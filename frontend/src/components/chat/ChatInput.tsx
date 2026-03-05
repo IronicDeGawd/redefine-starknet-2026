@@ -1,8 +1,20 @@
 "use client";
 
-import { useState, useRef, useEffect, type KeyboardEvent, type FormEvent } from "react";
+import { useState, useMemo, useRef, useEffect, type KeyboardEvent, type FormEvent } from "react";
 import { cn } from "@/lib/cn";
 import { Send, Sparkles } from "lucide-react";
+
+const SUGGESTIONS = [
+  { text: "I want to prove my Bitcoin holdings", triggers: ["btc", "bitcoin", "prove", "holding"] },
+  { text: "I want to prove my Ethereum holdings", triggers: ["eth", "ethereum", "wallet", "ether"] },
+  { text: "Create a GitHub developer credential", triggers: ["github", "dev", "developer", "code", "repo"] },
+  { text: "Verify my Codeforces rating", triggers: ["codeforces", "competitive", "rating", "cp"] },
+  { text: "Prove my Strava fitness activity", triggers: ["strava", "fitness", "run", "exercise", "athlete"] },
+  { text: "Verify my Steam gaming profile", triggers: ["steam", "game", "gaming"] },
+  { text: "How does ZKCred work?", triggers: ["how", "what", "explain", "help", "work"] },
+  { text: "Show me my credentials", triggers: ["show", "list", "credential", "my"] },
+  { text: "What is a zero-knowledge proof?", triggers: ["zk", "zero", "knowledge", "proof", "privacy"] },
+];
 
 interface ChatInputProps {
   onSend: (message: string) => void;
@@ -17,6 +29,25 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const matchedSuggestions = useMemo(() => {
+    const input = message.trim().toLowerCase();
+    if (input.length < 2) return [];
+    const words = input.split(/\s+/);
+    return SUGGESTIONS.filter((s) =>
+      s.triggers.some((trigger) =>
+        words.some((word) => word.length >= 3 && trigger.startsWith(word))
+      )
+    ).slice(0, 3);
+  }, [message]);
+
+  const handleSuggestionClick = (text: string) => {
+    onSend(text);
+    setMessage("");
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  };
 
   // Auto-resize textarea
   useEffect(() => {
@@ -48,6 +79,22 @@ export function ChatInput({
 
   return (
     <form onSubmit={handleSubmit} className="relative">
+      {/* Suggestion chips */}
+      {matchedSuggestions.length > 0 && !disabled && (
+        <div className="flex flex-wrap gap-2 mb-2 animate-fade-in">
+          {matchedSuggestions.map((s) => (
+            <button
+              key={s.text}
+              type="button"
+              onClick={() => handleSuggestionClick(s.text)}
+              className="px-3 py-1.5 text-xs font-medium text-[var(--primary)] bg-[var(--primary-light)] hover:bg-[var(--primary)]/15 rounded-full transition-colors border border-[var(--primary)]/20"
+            >
+              {s.text}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div
         className={cn(
           "relative flex items-end gap-2 p-2",
