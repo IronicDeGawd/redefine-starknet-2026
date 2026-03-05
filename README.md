@@ -1,156 +1,212 @@
-# ZKCred
+# ZKCred — Privacy-Preserving Identity Passport on Starknet
 
-> Privacy-preserving credentials for Bitcoin holders on Starknet
+> **RE{DEFINE} Hackathon 2026** | Track: Privacy + Bitcoin on Starknet
 
-ZKCred enables Bitcoin holders to create verifiable credentials that prove their holdings tier or wallet age without revealing their wallet address or exact balance. Built for the RE{DEFINE} Hackathon 2026.
+ZKCred solves a fundamental Web3 problem: **you shouldn't have to reveal your wallet to prove what's in it.** We built a full credential infrastructure where Bitcoin holders and Web3 users can prove facts about themselves — their BTC tier, GitHub reputation, gaming history, fitness activity — as verifiable on-chain credentials, without exposing the underlying data.
 
-## Overview
+**One sentence:** ZKCred is a privacy-first, AI-powered credential passport that lets you prove who you are without revealing what you own.
 
-ZKCred combines:
-- **Bitcoin wallet signatures (BIP-322)** for ownership verification
-- **Oracle-verified credentials** with on-chain proof of verification
-- **Starknet smart contracts** for immutable credential storage
-- **AI-powered chat interface** for conversational credential issuance
-- **Public REST API** for third-party integrations
-- **Privacy-first design** — only the tier is revealed, never the actual wallet
+---
 
-### Credential Types
+## Why ZKCred?
 
-#### Bitcoin Tier (`btc_tier`)
+Today, gated communities ask for wallet screenshots. Airdrops require you to connect your whale wallet publicly. Discord servers can't verify Bitcoin ownership without doxxing. **ZKCred fixes this.**
 
-| Tier | Name | BTC Balance | Emoji |
-|------|------|-------------|-------|
-| 0 | Shrimp | < 1 BTC | 🦐 |
-| 1 | Crab | 1-10 BTC | 🦀 |
-| 2 | Fish | 10-100 BTC | 🐟 |
-| 3 | Whale | 100+ BTC | 🐋 |
+- A Bitcoin whale proves they hold 100+ BTC → receives a `Whale` credential → shares only the credential ID
+- A GitHub developer proves 500+ stars → gets a `Star Developer` badge → NFT minted on Starknet
+- A DeFi protocol integrates ZKCred's API → gates access in 5 lines of code
 
-#### Wallet Age (`wallet_age`)
+Zero balance revealed. Zero wallet exposed. Fully on-chain. Trustless.
 
-| Tier | Name | Wallet Age | Emoji |
-|------|------|------------|-------|
-| 0 | Newbie | < 30 days | 🌱 |
-| 1 | Hodler | 30-180 days | 💎 |
-| 2 | Veteran | 180-365 days | ⭐ |
-| 3 | OG | 1+ year | 👑 |
+---
+
+## What We Built
+
+### 🔐 Privacy-First Credentials
+
+| Credential | Source | Verification |
+|---|---|---|
+| `btc_tier` | Bitcoin wallet | BIP-322 signature (Xverse) |
+| `wallet_age` | Bitcoin wallet | BIP-322 + Mempool.space oracle |
+| `eth_holder` | Ethereum wallet | EIP-191 + public RPC oracle |
+| `github_dev` | GitHub profile | OAuth + GitHub API |
+| `codeforces_coder` | Codeforces | OIDC callback + public API |
+| `steam_gamer` | Steam library | OpenID + Steam Web API |
+| `strava_athlete` | Strava activity | OAuth 2.0 + Strava API |
+
+Every credential stores only a Poseidon hash of the identifier on-chain — never the raw wallet address, username, or balance.
+
+### 🤖 AI-Guided Issuance
+
+An AI agent (AWS Bedrock / Claude) walks users through credential creation conversationally. No forms. No technical knowledge needed. Just describe what you want to prove and the agent handles wallet connection, signing, oracle verification, and on-chain issuance.
+
+### ⛓️ Cairo Smart Contracts on Starknet
+
+```
+CredentialRegistry   — stores, issues, revokes credentials (on Sepolia)
+CredentialVerifier   — helper verification for third-party integrations
+BadgeNFT             — soulbound ERC-721, one per credential, cross-contract gating
+CredentialMerkle     — Merkle tree accumulator for batch credential proofs
+RangeProofVerifier   — on-chain range proof verification (stake in privacy story)
+```
+
+**Deployed on Starknet Sepolia:**
+- CredentialRegistry: `0xab5fbdd27cc7e4d337742295d62c986489d6e36f1020009bffa7935f9e1038`
+- CredentialVerifier: `0x22a8cfb1aa5383fd39f6c3db717770905379a3531457b75bd1e56917392e3a4`
+
+### 🌐 Public REST API
+
+Any dApp can verify credentials without building their own credential system:
+
+```bash
+# Check if a user is a Bitcoin whale
+curl -X POST https://zkcred.xyz/api/v1/credentials/0xabc.../verify \
+  -H "X-API-Key: zkcred_live_xxx" \
+  -d '{"minTier": 3}'
+# → {"valid": true, "tier": 3, "tierName": "Whale"}
+```
+
+Endpoints: `GET /credentials/{id}`, `POST /credentials/{id}/verify`, `POST /credentials/batch-verify`, `GET /health`
+
+### 🎮 Demo Features Built
+
+| Page | What it shows |
+|---|---|
+| `/connect` | Connect 6 account types, issue credentials |
+| `/chat` | AI agent credential creation |
+| `/passport` | Multi-chain reputation identity hub |
+| `/lounge` | Tier-gated content (Shrimp → Whale access levels) |
+| `/playground` | Interactive live API testing |
+| `/examples/discord` | Discord bot integration showcase |
+| `/crypto` | ZK primitives explainer |
+| `/docs` | 11 MDX API documentation pages |
+
+---
 
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────────────┐
-│                         FRONTEND                                 │
-│  Next.js 15 • Tailwind CSS v4 • Zustand • sats-connect           │
-│                                                                   │
-│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐        │
-│  │ Chat UI   │ │ Wallet    │ │ Credential│ │ Playground│        │
-│  │ (AI Agent)│ │ Gating    │ │ Cards     │ │ & Lounge  │        │
-│  └───────────┘ └───────────┘ └───────────┘ └───────────┘        │
-└───────────────────────────┬──────────────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                       BACKEND (Next.js API)                       │
-│                                                                   │
-│  /api/chat               → AWS Bedrock (Claude) AI agent         │
-│  /api/credential         → Issue credentials on Starknet         │
-│  /api/credential/verified → Oracle-verified credential issuance  │
-│  /api/v1/credentials/:id → Public API: get credential details    │
-│  /api/v1/credentials/:id/verify → Public API: verify credential  │
-│  /api/v1/credentials/batch-verify → Public API: batch verify     │
-│  /api/v1/keys            → API key management                    │
-│  /api/v1/health          → Service health check                  │
-└───────────────────────────┬──────────────────────────────────────┘
-                            │
-                            ▼
-┌──────────────────────────────────────────────────────────────────┐
-│                    STARKNET (Sepolia Testnet)                      │
-│                                                                   │
-│  CredentialRegistry → Store, issue, revoke credentials           │
-│  CredentialVerifier → Helper verification functions              │
-│                                                                   │
-│  On-chain data: tier, credential type, verification_hash,        │
-│                 oracle_provider, issuance timestamp               │
-└──────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────┐
+│              FRONTEND (Next.js 15)               │
+│  Chat UI • Connect • Passport • Playground       │
+└─────────────────────┬───────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────┐
+│           BACKEND (Next.js API Routes)           │
+│                                                  │
+│  AI Agent (AWS Bedrock / Claude)                 │
+│  6 Oracle Connectors (BTC, ETH, GitHub, ...)     │
+│  Public REST API v1 (auth, rate-limit, Redis)    │
+└─────────────────────┬───────────────────────────┘
+                      │
+┌─────────────────────▼───────────────────────────┐
+│           STARKNET SEPOLIA (Cairo)               │
+│                                                  │
+│  CredentialRegistry  CredentialVerifier          │
+│  BadgeNFT (ERC-721)  CredentialMerkle            │
+│  RangeProofVerifier                              │
+└─────────────────────────────────────────────────┘
 ```
+
+---
+
+## Privacy Design
+
+| Data | What we store on-chain | What we DON'T store |
+|---|---|---|
+| Bitcoin wallet | `Poseidon(pubkey)` hash | Address, balance, transaction history |
+| ETH address | `Poseidon(address)` hash | Address, balance |
+| GitHub username | `Poseidon(username)` hash | Username, repos, email |
+| Credential tier | Tier number (0–3) | Exact balance, exact star count |
+| Oracle proof | `SHA256(oracle_response)` hash | Raw oracle response |
+
+No raw PII touches the chain. Verifiers learn only the tier — nothing else.
+
+---
+
+## Bitcoin + Xverse Integration
+
+Bitcoin ownership verification uses **BIP-322 message signing** via `sats-connect` (Xverse wallet). The server verifies the signature using `bip322-js`, confirms wallet ownership, then issues a credential without ever seeing the balance.
+
+For the `btc_tier` credential, we query Mempool.space (or the Xverse API) to determine the tier from the confirmed UTXO balance — the actual balance is hashed and stored as an oracle proof hash, never the raw number.
+
+This directly uses **Xverse**, the hackathon sponsor's tooling.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15, React 19, Tailwind CSS v4, Zustand |
+| AI Agent | AWS Bedrock (Claude Sonnet) with tool_use |
+| Blockchain | Starknet Sepolia — Cairo 2.x contracts |
+| Bitcoin | sats-connect (Xverse), BIP-322 signatures (bip322-js) |
+| Ethereum | EIP-191 server-side verification (@noble/curves) |
+| Storage | Redis (API keys, session cache, rate limiting) |
+| Oracles | Mempool.space, GitHub API, Steam API, Strava API, Codeforces API |
+| Docs | MDX with @tailwindcss/typography |
+
+---
 
 ## Quick Start
 
-### Prerequisites
-
-- Node.js 22+
-- Scarb 2.15.2+ (for Cairo contracts)
-- Starknet Foundry 0.56.0+ (for contract testing)
-- Redis (for session storage and API key management)
-
-### 1. Clone & Install
-
 ```bash
-git clone <repo-url>
-cd redefine-hackathon-2026
-
-# Install frontend dependencies
-cd frontend
+# Clone and install
+git clone <repo>
+cd redefine-hackathon-2026/frontend
 npm install
-```
 
-### 2. Environment Setup
+# Configure environment (see .env.example)
+cp .env.example .env.local
 
-Create `frontend/.env.local`:
-
-```env
-# AWS Bedrock (for AI chat agent)
-AWS_ACCESS_KEY_ID=your_access_key
-AWS_SECRET_ACCESS_KEY=your_secret_key
-AWS_REGION=us-east-1
-
-# Starknet (Sepolia)
-STARKNET_RPC_URL=https://rpc.starknet-testnet.lava.build/rpc/v0_8
-NEXT_PUBLIC_STARKNET_NETWORK=sepolia
-STARKNET_PRIVATE_KEY=your_deployer_private_key
-STARKNET_ACCOUNT_ADDRESS=your_deployer_account_address
-
-# Contract Addresses (deployed on Sepolia)
-CREDENTIAL_REGISTRY_ADDRESS=0xab5fbdd27cc7e4d337742295d62c986489d6e36f1020009bffa7935f9e1038
-CREDENTIAL_VERIFIER_ADDRESS=0x22a8cfb1aa5383fd39f6c3db717770905379a3531457b75bd1e56917392e3a4
-
-# Oracle Config (mock tiers for demo — address:tier pairs)
-MOCK_TIERS=bc1ql8zhxyhnumvqsuf02d27zxqq4p2zmre4krwplg:3,bc1qzywsx7q3zxlvdak3wc9eywkwmrpdes2el8q2cw:2
-
-# Redis (for API keys and chat session storage)
-REDIS_URL=redis://localhost:6379
-
-# App Config
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_EXPLORER_URL=https://sepolia.starkscan.co
-```
-
-### 3. Run Development Server
-
-```bash
-cd frontend
+# Run dev server
 npm run dev
+# → http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000)
+**Required env vars:**
+- `AWS_ACCESS_KEY_ID / SECRET` — Bedrock AI agent
+- `STARKNET_PRIVATE_KEY / ACCOUNT_ADDRESS` — contract write access
+- `CREDENTIAL_REGISTRY_ADDRESS` — deployed contract address
+- `REDIS_URL` — API key and session storage
 
-### 4. Build & Deploy Contracts (optional)
+See [`.env.example`](./frontend/.env.example) for the full list.
 
-If you need to redeploy the contracts:
+---
+
+## Smart Contract Testing
 
 ```bash
 cd contracts
-
-# Build
-scarb build
-
-# Run tests
-snforge test
-
-# Deploy (requires funded Starknet account)
-export STARKNET_PRIVATE_KEY=0x...
-export STARKNET_ACCOUNT_ADDRESS=0x...
-node scripts/deploy.js
+snforge test    # 25 unit tests across 5 test files
 ```
+
+Tests cover: credential issuance, revocation, duplicate prevention, verifier calls, NFT minting, Merkle proofs, range proof verification.
+
+---
+
+## Integration Example — Discord Bot
+
+A ready-to-deploy Discord bot that assigns server roles based on ZKCred credential tiers:
+
+```js
+// User runs /verify 0xabc...
+// Bot calls ZKCred API → gets tier → assigns role
+client.on("interactionCreate", async (interaction) => {
+  const res = await fetch(`${ZKCRED_URL}/api/v1/credentials/${id}/verify`, {
+    method: "POST",
+    headers: { "X-API-Key": ZKCRED_API_KEY },
+    body: JSON.stringify({ minTier: 0 }),
+  });
+  const { valid, tier } = await res.json();
+  if (valid) await member.roles.add(TIER_ROLES[tier]);
+});
+```
+
+Full bot in [`examples/discord-bot/`](./examples/discord-bot/).
+
+---
 
 ## Project Structure
 
@@ -158,198 +214,42 @@ node scripts/deploy.js
 redefine-hackathon-2026/
 ├── contracts/                  # Cairo smart contracts
 │   ├── src/
-│   │   ├── interfaces.cairo          # Contract interfaces & Credential struct
-│   │   ├── credential_registry.cairo # Main registry (issue, revoke, get)
-│   │   └── credential_verifier.cairo # Verification helper
-│   ├── tests/
-│   │   ├── test_registry.cairo       # Registry unit tests
-│   │   └── test_verifier.cairo       # Verifier unit tests
-│   └── scripts/
-│       └── deploy.js                 # Deployment script (starknet.js)
+│   │   ├── credential_registry.cairo   # Core registry
+│   │   ├── credential_verifier.cairo   # Verification helper
+│   │   ├── badge_nft.cairo             # Soulbound ERC-721
+│   │   ├── credential_merkle.cairo     # Merkle accumulator
+│   │   ├── range_proof_verifier.cairo  # ZK range proofs
+│   │   └── interfaces.cairo
+│   ├── tests/                  # 25 snforge unit tests
+│   └── scripts/                # deploy.js, deploy-badge-nft.js
 │
-├── frontend/                   # Next.js application
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── page.tsx              # Dashboard
-│   │   │   ├── credentials/          # Credential management
-│   │   │   ├── verify/               # Credential verification
-│   │   │   ├── playground/           # Interactive API playground
-│   │   │   ├── lounge/               # Tier-gated content demo
-│   │   │   ├── examples/discord/     # Discord bot showcase
-│   │   │   ├── settings/             # API key management
-│   │   │   ├── docs/                 # Documentation (MDX)
-│   │   │   └── api/                  # API routes
-│   │   │       ├── chat/             # AI chat agent (Bedrock)
-│   │   │       ├── credential/       # Credential issuance
-│   │   │       └── v1/               # Public API v1
-│   │   ├── components/               # UI components
-│   │   ├── hooks/                    # React hooks
-│   │   ├── lib/
-│   │   │   ├── bedrock/              # AWS Bedrock AI integration
-│   │   │   ├── starknet/             # Starknet client & ABI
-│   │   │   ├── oracle/               # Balance & wallet age oracles
-│   │   │   ├── redis/                # Redis client for sessions
-│   │   │   ├── api/                  # API auth, rate limiting
-│   │   │   └── utils/                # Crypto, validation, formatting
-│   │   ├── stores/                   # Zustand state management
-│   │   └── types/                    # TypeScript types
-│   └── .env.local                    # Environment variables
+├── frontend/                   # Next.js 15 app
+│   ├── src/app/                # 12 pages + API routes
+│   ├── src/lib/
+│   │   ├── connectors/         # 5 OAuth/OpenID connectors
+│   │   ├── oracle/             # Balance + wallet age verifiers
+│   │   ├── bedrock/            # AI agent + tool definitions
+│   │   ├── starknet/           # Contract clients + ABIs
+│   │   ├── crypto/             # Commitment, Merkle utilities
+│   │   ├── redis/              # Session cache, API keys
+│   │   └── security/           # Content filtering
+│   └── src/components/         # UI components
 │
-├── examples/                   # Integration examples
-│   └── discord-bot/                  # Discord bot example
-│       ├── index.js                  # Bot source code
-│       ├── register-commands.js      # Slash command registration
-│       └── package.json
-│
-├── context/                    # Research & planning docs (gitignored)
-└── README.md
+└── examples/
+    └── discord-bot/            # Ready-to-deploy Discord integration
 ```
-
-## Features
-
-### Pages
-
-| Page | Path | Description |
-|------|------|-------------|
-| Dashboard | `/` | Overview with credential stats and wallet gating |
-| Credentials | `/credentials` | View and manage issued credentials |
-| Verify | `/verify` | Verify any credential by ID |
-| API Playground | `/playground` | Interactive API testing with live requests |
-| Whale Lounge | `/lounge` | Tier-gated content demo (Shrimp → Whale) |
-| Discord Bot | `/examples/discord` | Bot showcase with code, flow diagram, and quick start |
-| Settings | `/settings` | Generate and manage API keys |
-| Docs | `/docs` | API documentation, quickstart guide, contract details |
-
-### Public API (v1)
-
-All endpoints under `/api/v1/` require an API key via the `X-API-Key` header (except health check). Generate keys from the Settings page.
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/v1/health` | Service health check (no auth) |
-| `GET` | `/api/v1/credentials/{id}` | Get credential details |
-| `POST` | `/api/v1/credentials/{id}/verify` | Verify a credential (optional `minTier` body) |
-| `POST` | `/api/v1/credentials/batch-verify` | Batch verify up to 100 credentials |
-| `POST` | `/api/v1/keys` | Generate a new API key |
-
-### AI Chat Agent
-
-The AI chat agent (powered by AWS Bedrock / Claude) guides users through credential issuance:
-
-1. User describes what they want to prove (Bitcoin balance tier or wallet age)
-2. Agent requests a BIP-322 wallet signature for ownership verification
-3. Oracle verifies the claim (balance lookup or wallet age check)
-4. Credential is issued on-chain with oracle verification metadata
-
-### Oracle Verification
-
-Credentials can be issued in two modes:
-- **Oracle-verified**: Balance/age checked via oracle, `verification_hash` and `oracle_provider` stored on-chain
-- **Self-declared**: User claims a tier without oracle proof (marked with `0x0` verification hash)
-
-For demos, `MOCK_TIERS` env var maps Bitcoin addresses to pre-set tiers without requiring real balance lookups.
-
-## Discord Bot Setup
-
-A ready-to-deploy Discord bot that assigns server roles based on ZKCred credential tiers.
-
-### Setup
-
-```bash
-cd examples/discord-bot
-npm install
-```
-
-### Configuration
-
-Set these environment variables:
-
-| Variable | Description |
-|----------|-------------|
-| `DISCORD_TOKEN` | Bot token from [Discord Developer Portal](https://discord.com/developers/applications) |
-| `DISCORD_CLIENT_ID` | Application ID |
-| `GUILD_ID` | Discord server ID |
-| `ZKCRED_API_URL` | ZKCred API base URL (default: `http://localhost:3000`) |
-| `ZKCRED_API_KEY` | API key generated from ZKCred Settings page |
-
-### Invite the Bot
-
-```
-https://discord.com/api/oauth2/authorize?client_id=YOUR_CLIENT_ID&permissions=268435456&scope=bot%20applications.commands
-```
-
-### Run
-
-```bash
-npm start
-```
-
-Members can use `/verify credential_id:0x...` to get assigned Shrimp/Crab/Fish/Whale roles.
-
-## Deployed Contracts (Sepolia)
-
-| Contract | Address |
-|----------|---------|
-| CredentialRegistry | [`0xab5fbdd27cc7...e1038`](https://sepolia.starkscan.co/contract/0xab5fbdd27cc7e4d337742295d62c986489d6e36f1020009bffa7935f9e1038) |
-| CredentialVerifier | [`0x22a8cfb1aa53...2e3a4`](https://sepolia.starkscan.co/contract/0x22a8cfb1aa5383fd39f6c3db717770905379a3531457b75bd1e56917392e3a4) |
-
-### Credential Struct (on-chain)
-
-```cairo
-struct Credential {
-    pubkey_hash: felt252,        // Hash of Bitcoin public key
-    credential_type: felt252,    // "btc_tier" or "wallet_age"
-    tier: u8,                    // 0-3
-    issued_at: u64,              // Unix timestamp
-    revoked: bool,
-    verification_hash: felt252,  // Hash of oracle response (0 if self-declared)
-    oracle_provider: felt252,    // Oracle identifier (0 if self-declared)
-}
-```
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|------------|
-| Frontend | Next.js 15, React 19, Tailwind CSS v4, Zustand |
-| AI | AWS Bedrock (Claude Sonnet) |
-| Blockchain | Starknet (Cairo), starknet.js |
-| Bitcoin | sats-connect (Xverse), BIP-322 signatures (bip322-js) |
-| Storage | Redis (sessions, API keys, rate limiting) |
-| Docs | MDX with @tailwindcss/typography |
-
-## Security
-
-- Bitcoin signatures verified server-side using BIP-322 standard (`bip322-js`)
-- Oracle verification metadata stored on-chain (hash + provider) for auditability
-- API key authentication with Redis-backed rate limiting
-- Owner-only credential revocation on contracts
-- Batch verification capped at 100 to prevent DoS
-- Input sanitization on all API endpoints
-- No raw wallet addresses stored on-chain (only hashes)
-- `felt252` truncation (31 bytes) for safe hash storage in Starknet
-
-## Testing
-
-### Smart Contracts
-
-```bash
-cd contracts
-snforge test    # Runs 25 unit tests
-```
-
-### Frontend
-
-```bash
-cd frontend
-npm run build   # Type-checks and builds all pages
-npm run lint    # ESLint checks
-```
-
-## License
-
-MIT
 
 ---
 
-Built for the [RE{DEFINE} Hackathon](https://dorahacks.io/hackathon/redefine) by the Starknet Foundation.
+## Deployed Contracts
+
+| Contract | Sepolia Address |
+|---|---|
+| CredentialRegistry | [`0xab5fbd...e1038`](https://sepolia.starkscan.co/contract/0xab5fbdd27cc7e4d337742295d62c986489d6e36f1020009bffa7935f9e1038) |
+| CredentialVerifier | [`0x22a8cf...e3a4`](https://sepolia.starkscan.co/contract/0x22a8cfb1aa5383fd39f6c3db717770905379a3531457b75bd1e56917392e3a4) |
+
+---
+
+## License
+
+MIT — Built for the [RE{DEFINE} Hackathon](https://dorahacks.io/hackathon/redefine) by the Starknet Foundation.
