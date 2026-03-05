@@ -1,6 +1,7 @@
 {
-  "name": "frontend",
+  "name": "zkcred",
   "version": "0.1.0",
+  "description": "Privacy-preserving identity credentials for Bitcoin holders on Starknet — AI-powered issuance, multi-chain passport, on-chain verification",
   "private": true,
   "scripts": {
     "dev": "next dev",
