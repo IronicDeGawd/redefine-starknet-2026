@@ -253,6 +253,12 @@ redefine-hackathon-2026/
 
 ---
 
+## Starknet Wallet Address
+
+`0x01c29B3651873C4A9198C24F451efaca789beb4fF6652755eBc92C2f1Ad7aB8C`
+
+---
+
 ## License
 
 MIT — Built for the [RE{DEFINE} Hackathon](https://dorahacks.io/hackathon/redefine) by the Starknet Foundation.
