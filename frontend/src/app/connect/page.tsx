@@ -259,7 +259,8 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     );
 
     // Check if credential already exists in local store
-    const alreadyIssued = existingCredentials.some((c) => c.credentialType === connector.credentialType);
+    const existingCredential = existingCredentials.find((c) => c.credentialType === connector.credentialType);
+    const alreadyIssued = !!existingCredential;
 
     // Auto-expand after OAuth callback redirect
     const returnedFromOAuth =
@@ -615,10 +616,34 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             {/* Already Issued State */}
             {alreadyIssued && status !== "success" && (
                 <div className="mt-4 pt-4 border-t border-[var(--border-light)]">
-                    <div className="flex items-center gap-2 text-sm text-green-400">
-                        <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                        <span>Credential already issued</span>
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-[var(--text-muted)]">Your tier:</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">{connector.tiers[existingCredential!.tier]?.emoji}</span>
+                            <span className="font-semibold text-[var(--text-primary)]">
+                                {connector.tiers[existingCredential!.tier]?.name}
+                            </span>
+                        </div>
                     </div>
+                    {existingCredential!.transactionHash ? (
+                        <a
+                            href={`https://sepolia.voyager.online/tx/${existingCredential!.transactionHash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[var(--accent-primary)] hover:underline block"
+                        >
+                            View on Voyager →
+                        </a>
+                    ) : (
+                        <a
+                            href={`https://sepolia.voyager.online/contract/${process.env.NEXT_PUBLIC_CREDENTIAL_REGISTRY_ADDRESS}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[var(--accent-primary)] hover:underline block"
+                        >
+                            View on Voyager →
+                        </a>
+                    )}
                 </div>
             )}
 
@@ -826,28 +851,30 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             {/* Success Result */}
             {status === "success" && result && (
                 <div className="mt-4 pt-4 border-t border-[var(--border-light)]">
-                    {result.tier >= 0 ? (
-                        <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm text-[var(--text-muted)]">Your tier:</span>
-                            <div className="flex items-center gap-2">
-                                <span className="text-lg">{connector.tiers[result.tier]?.emoji}</span>
-                                <span className="font-semibold text-[var(--text-primary)]">{result.tierName}</span>
-                            </div>
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-[var(--text-muted)]">Your tier:</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-lg">{connector.tiers[result.tier]?.emoji}</span>
+                            <span className="font-semibold text-[var(--text-primary)]">{result.tierName}</span>
                         </div>
-                    ) : (
-                        <div className="flex items-center gap-2 text-sm text-green-400 mb-2">
-                            <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                            <span>Credential already issued</span>
-                        </div>
-                    )}
-                    {result.transactionHash && (
+                    </div>
+                    {result.transactionHash ? (
                         <a
                             href={`https://sepolia.voyager.online/tx/${result.transactionHash}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="text-xs text-[var(--accent-primary)] hover:underline block mt-1"
                         >
-                            View on Starkscan →
+                            View on Voyager →
+                        </a>
+                    ) : (
+                        <a
+                            href={`https://sepolia.voyager.online/contract/${process.env.NEXT_PUBLIC_CREDENTIAL_REGISTRY_ADDRESS}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-[var(--accent-primary)] hover:underline block mt-1"
+                        >
+                            View on Voyager →
                         </a>
                     )}
                 </div>
