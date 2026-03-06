@@ -157,12 +157,13 @@ function CredentialSuccess({ data }: { data: CredentialSuccessData }) {
   );
 }
 
-function formatTime(date: Date): string {
+function formatTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("en-US", {
     hour: "numeric",
     minute: "2-digit",
     hour12: true,
-  }).format(date);
+  }).format(d);
 }
 
 function truncateId(id: string): string {

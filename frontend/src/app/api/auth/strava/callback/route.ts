@@ -14,53 +14,54 @@ export const runtime = "nodejs";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
 
-function connectRedirect(query: string, req: NextRequest): NextResponse {
+function pageRedirect(query: string, fromChat: boolean, req: NextRequest): NextResponse {
   const base = APP_URL || req.url;
-  return NextResponse.redirect(new URL(`${BASE_PATH}/connect?${query}`, base));
+  const page = fromChat ? "chat" : "connect";
+  return NextResponse.redirect(new URL(`${BASE_PATH}/${page}?${query}`, base));
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get("code");
   const error = searchParams.get("error");
-  const stateParam = searchParams.get("state");
+  const stateParam = decodeURIComponent(searchParams.get("state") ?? "");
+
+  const stateCookie = req.cookies.get("strava_oauth_state")?.value;
+  const fromChat = stateParam.endsWith(":chat");
 
   if (error) {
-    return connectRedirect(`error=${encodeURIComponent(error)}`, req);
+    return pageRedirect(`error=${encodeURIComponent(error)}`, fromChat, req);
   }
 
   if (!code) {
-    return connectRedirect("error=missing_code", req);
+    return pageRedirect("error=missing_code", fromChat, req);
   }
 
-  // [1.3 FIX] Validate CSRF state
-  const stateCookie = req.cookies.get("strava_oauth_state")?.value;
+  // Validate CSRF state
   if (!stateParam || !stateCookie || stateParam !== stateCookie) {
-    return connectRedirect("error=invalid_state", req);
+    return pageRedirect("error=invalid_state", fromChat, req);
   }
 
   const clientId = process.env.STRAVA_CLIENT_ID;
   const clientSecret = process.env.STRAVA_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    return connectRedirect("error=strava_not_configured", req);
+    return pageRedirect("error=strava_not_configured", fromChat, req);
   }
 
   try {
     const { accessToken, athleteId } = await exchangeCode(code, clientId, clientSecret);
 
-    // [1.2 FIX] Store token + athleteId in HttpOnly cookies, NOT in URL
-    const response = connectRedirect("strava_success=true", req);
+    const response = pageRedirect("strava_success=true", fromChat, req);
 
     response.cookies.set("strava_token", accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 300, // 5 minutes — short-lived
+      maxAge: 300,
       path: "/",
     });
 
-    // [2.2 FIX] Store verified athleteId from Strava's token exchange
     response.cookies.set("strava_athlete_id", String(athleteId), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -69,12 +70,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       path: "/",
     });
 
-    // Clear the CSRF state cookie
     response.cookies.delete("strava_oauth_state");
 
     return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "OAuth failed";
-    return connectRedirect(`error=${encodeURIComponent(message)}`, req);
+    return pageRedirect(`error=${encodeURIComponent(message)}`, fromChat, req);
   }
 }

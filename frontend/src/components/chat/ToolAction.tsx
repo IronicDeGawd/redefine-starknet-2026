@@ -509,31 +509,32 @@ function StartOAuthAction({
 
   const handleAuth = () => {
     const origin = window.location.origin;
+    const rand = Math.random().toString(36).slice(2);
+    // Encode "from=chat" in state so callbacks redirect back to /chat
+    const chatState = `${rand}:chat`;
 
     if (platform === "github") {
       const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
       if (!clientId) { onAction("error", { message: "GitHub OAuth not configured" }); return; }
-      const state = Math.random().toString(36).slice(2);
-      document.cookie = `gh_oauth_state=${state};path=/;max-age=300;samesite=strict`;
+      document.cookie = `gh_oauth_state=${chatState};path=/;max-age=300;samesite=strict`;
       const redirectUri = `${origin}${BASE_PATH}/api/auth/github/callback`;
-      window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user&state=${state}`;
+      window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user&state=${encodeURIComponent(chatState)}`;
     } else if (platform === "codeforces") {
       const clientId = process.env.NEXT_PUBLIC_CODEFORCES_CLIENT_ID;
       if (!clientId) { onAction("error", { message: "Codeforces OIDC not configured" }); return; }
-      const state = Math.random().toString(36).slice(2);
-      document.cookie = `cf_oauth_state=${state};path=/;max-age=300;samesite=strict`;
+      document.cookie = `cf_oauth_state=${chatState};path=/;max-age=300;samesite=strict`;
       const redirectUri = `${origin}${BASE_PATH}/api/auth/codeforces/callback`;
-      window.location.href = `https://codeforces.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid&state=${state}`;
+      window.location.href = `https://codeforces.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid&state=${encodeURIComponent(chatState)}`;
     } else if (platform === "steam") {
-      const returnUrl = `${origin}${BASE_PATH}/api/auth/steam/callback`;
+      // Steam OpenID doesn't use state; embed from=chat in the return URL
+      const returnUrl = `${origin}${BASE_PATH}/api/auth/steam/callback?from=chat`;
       window.location.href = getOpenIDUrl(returnUrl);
     } else if (platform === "strava") {
       const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
       if (!clientId) { onAction("error", { message: "Strava OAuth not configured" }); return; }
-      const state = Math.random().toString(36).slice(2);
-      document.cookie = `strava_oauth_state=${state};path=/;max-age=300;samesite=strict`;
+      document.cookie = `strava_oauth_state=${chatState};path=/;max-age=300;samesite=strict`;
       const redirectUri = `${origin}${BASE_PATH}/api/auth/strava/callback`;
-      window.location.href = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all&state=${state}`;
+      window.location.href = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all&state=${encodeURIComponent(chatState)}`;
     } else {
       onAction("error", { message: `Unknown OAuth platform: ${platform}` });
     }

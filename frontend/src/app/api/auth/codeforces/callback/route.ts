@@ -13,29 +13,32 @@ export const runtime = "nodejs";
 const BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "";
 
-function connectRedirect(query: string, req: NextRequest): NextResponse {
+function pageRedirect(query: string, fromChat: boolean, req: NextRequest): NextResponse {
   const base = APP_URL || req.url;
-  return NextResponse.redirect(new URL(`${BASE_PATH}/connect?${query}`, base));
+  const page = fromChat ? "chat" : "connect";
+  return NextResponse.redirect(new URL(`${BASE_PATH}/${page}?${query}`, base));
 }
 
 export async function GET(req: NextRequest): Promise<NextResponse> {
   const searchParams = req.nextUrl.searchParams;
   const code = searchParams.get("code");
   const error = searchParams.get("error");
-  const stateParam = searchParams.get("state");
+  const stateParam = decodeURIComponent(searchParams.get("state") ?? "");
+
+  const stateCookie = req.cookies.get("cf_oauth_state")?.value;
+  const fromChat = stateParam.endsWith(":chat");
 
   if (error) {
-    return connectRedirect(`error=${encodeURIComponent(error)}`, req);
+    return pageRedirect(`error=${encodeURIComponent(error)}`, fromChat, req);
   }
 
   if (!code) {
-    return connectRedirect("error=missing_code", req);
+    return pageRedirect("error=missing_code", fromChat, req);
   }
 
   // Validate CSRF state
-  const stateCookie = req.cookies.get("cf_oauth_state")?.value;
   if (!stateParam || !stateCookie || stateParam !== stateCookie) {
-    return connectRedirect("error=invalid_state", req);
+    return pageRedirect("error=invalid_state", fromChat, req);
   }
 
   const clientId = process.env.CODEFORCES_CLIENT_ID;
@@ -44,7 +47,7 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
   const redirectUri = `${appUrl}${BASE_PATH}/api/auth/codeforces/callback`;
 
   if (!clientId || !clientSecret) {
-    return connectRedirect("error=codeforces_not_configured", req);
+    return pageRedirect("error=codeforces_not_configured", fromChat, req);
   }
 
   try {
@@ -55,14 +58,13 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       redirectUri
     );
 
-    // Store verified handle in HttpOnly cookie
-    const response = connectRedirect("codeforces_success=true", req);
+    const response = pageRedirect("codeforces_success=true", fromChat, req);
 
     response.cookies.set("cf_verified_handle", handle, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
-      maxAge: 300, // 5 minutes
+      maxAge: 300,
       path: "/",
     });
 
@@ -74,12 +76,11 @@ export async function GET(req: NextRequest): Promise<NextResponse> {
       path: "/",
     });
 
-    // Clear CSRF state
     response.cookies.delete("cf_oauth_state");
 
     return response;
   } catch (err) {
     const message = err instanceof Error ? err.message : "OIDC exchange failed";
-    return connectRedirect(`error=${encodeURIComponent(message)}`, req);
+    return pageRedirect(`error=${encodeURIComponent(message)}`, fromChat, req);
   }
 }

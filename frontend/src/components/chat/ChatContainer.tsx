@@ -1,23 +1,61 @@
 "use client";
 
 import { useRef, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useChat } from "@/hooks/useChat";
+import { useAppStore } from "@/stores/useAppStore";
 import { ChatMessage } from "./ChatMessage";
 import { ChatInput } from "./ChatInput";
 import { ThinkingIndicator } from "./ThinkingIndicator";
 import { WelcomeScreen } from "./WelcomeScreen";
 
+const OAUTH_SUCCESS_PARAMS: Record<string, string> = {
+  github_success: "GitHub authentication successful",
+  codeforces_success: "Codeforces authentication successful",
+  steam_success: "Steam authentication successful",
+  strava_success: "Strava authentication successful",
+};
+
 export function ChatContainer() {
   const { messages, isAgentThinking, sendMessage, submitToolResult } = useChat();
+  const pendingToolUse = useAppStore((s) => s.pendingToolUse);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageCountRef = useRef(0);
+  const oauthHandledRef = useRef(false);
+  const searchParams = useSearchParams();
+  const router = useRouter();
+
+  // Resume conversation after OAuth redirect back to /chat
+  useEffect(() => {
+    if (oauthHandledRef.current) return;
+
+    const errorParam = searchParams.get("error");
+    if (errorParam) {
+      oauthHandledRef.current = true;
+      router.replace("/chat");
+      if (pendingToolUse) {
+        submitToolResult(pendingToolUse.id, { success: false, error: decodeURIComponent(errorParam) }, false);
+      }
+      return;
+    }
+
+    for (const [param, successMessage] of Object.entries(OAUTH_SUCCESS_PARAMS)) {
+      if (searchParams.get(param) === "true") {
+        oauthHandledRef.current = true;
+        router.replace("/chat");
+        if (pendingToolUse) {
+          submitToolResult(pendingToolUse.id, { success: true, message: successMessage }, true);
+        }
+        return;
+      }
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Scroll so the newest message is visible near the top of the viewport
   useEffect(() => {
     if (messages.length > lastMessageCountRef.current) {
       const area = scrollAreaRef.current;
       if (area) {
-        // Find the last message element and scroll it into view at the start
         const messageElements = area.querySelectorAll("[data-chat-message]");
         const lastEl = messageElements[messageElements.length - 1];
         if (lastEl) {
@@ -28,7 +66,7 @@ export function ChatContainer() {
     lastMessageCountRef.current = messages.length;
   }, [messages.length]);
 
-  const handleToolAction = async (toolId: string, action: string, data?: unknown) => {
+  const handleToolAction = async (toolId: string, _action: string, data?: unknown) => {
     await submitToolResult(toolId, data, true);
   };
 

@@ -188,6 +188,9 @@ export const useAppStore = create<AppState>()(
       name: "zkcred-storage",
       partialize: (state) => ({
         credentials: state.credentials,
+        messages: state.messages,
+        pendingToolUse: state.pendingToolUse,
+        sessionId: state.sessionId,
         btcWallet: state.btcWallet.status === "connected" ? state.btcWallet : {
           status: "disconnected" as const,
           address: null,
