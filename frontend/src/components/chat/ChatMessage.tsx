@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/cn";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { Message } from "@/stores/useAppStore";
 import { ToolAction } from "./ToolAction";
 import { TierIcon } from "@/components/credential/TierBadge";
@@ -67,8 +68,8 @@ export function ChatMessage({ message, onToolAction }: ChatMessageProps) {
               {message.content}
             </p>
           ) : (
-            <div className="text-[15px] leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-strong:text-[var(--text-primary)] prose-headings:text-[var(--text-primary)]">
-              <ReactMarkdown>{message.content}</ReactMarkdown>
+            <div className="text-[15px] leading-relaxed prose prose-sm max-w-none prose-p:my-1 prose-headings:my-2 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-strong:text-[var(--text-primary)] prose-headings:text-[var(--text-primary)] prose-table:my-2 prose-th:px-3 prose-th:py-1.5 prose-th:text-left prose-th:text-xs prose-th:font-semibold prose-th:bg-[var(--grey-100)] prose-td:px-3 prose-td:py-1.5 prose-td:text-sm prose-td:border-t prose-td:border-[var(--border-light)]">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
             </div>
           )}
         </div>

@@ -133,15 +133,6 @@ function ExternalLinkIcon() {
   );
 }
 
-function PlayIcon() {
-  return (
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--grey-400)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10" />
-      <polygon points="10 8 16 12 10 16 10 8" fill="var(--grey-400)" stroke="none" />
-    </svg>
-  );
-}
-
 export default function DiscordBotPage() {
   const [copied, setCopied] = useState(false);
 
@@ -215,7 +206,7 @@ export default function DiscordBotPage() {
           </h2>
 
           {/* Desktop: horizontal flow */}
-          <div className="hidden md:flex items-start gap-4">
+          <div className="hidden lg:flex items-start gap-4">
             {/* Step 1 */}
             <div
               className="flex-1 card card-interactive"
@@ -354,7 +345,7 @@ export default function DiscordBotPage() {
           </div>
 
           {/* Mobile: vertical flow */}
-          <div className="flex md:hidden flex-col items-center gap-3">
+          <div className="flex lg:hidden flex-col items-center gap-3">
             {/* Step 1 */}
             <div
               className="w-full card card-interactive"
@@ -382,6 +373,9 @@ export default function DiscordBotPage() {
                 <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                   User runs <code style={{ background: "var(--grey-100)", padding: "1px 5px", borderRadius: 4, fontSize: "0.85em", fontFamily: "monospace" }}>/verify</code>
                 </div>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.4, marginTop: 2 }}>
+                  Member types the slash command with their credential ID
+                </p>
               </div>
             </div>
 
@@ -414,6 +408,9 @@ export default function DiscordBotPage() {
                 <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                   Bot checks ZKCred API
                 </div>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.4, marginTop: 2 }}>
+                  Credential is verified on-chain via the public API
+                </p>
               </div>
             </div>
 
@@ -446,6 +443,9 @@ export default function DiscordBotPage() {
                 <div style={{ fontWeight: 600, color: "var(--text-primary)", fontSize: 14 }}>
                   Role assigned
                 </div>
+                <p style={{ fontSize: 13, color: "var(--text-muted)", lineHeight: 1.4, marginTop: 2 }}>
+                  Tier-based Discord role is granted automatically
+                </p>
               </div>
             </div>
           </div>
@@ -466,47 +466,18 @@ export default function DiscordBotPage() {
               width: "100%",
               paddingBottom: "56.25%", /* 16:9 aspect ratio */
               borderRadius: "var(--radius-xl)",
-              border: "2px dashed var(--grey-300)",
-              background: "var(--grey-100)",
+              border: "1px solid var(--border-light)",
+              background: "var(--grey-50)",
               overflow: "hidden",
             }}
           >
-            {/* The actual image (hidden until the GIF exists) */}
             <Image
-              src={`${BASE_PATH}/discord-bot-demo.gif`}
+              src={`${BASE_PATH}/discord_bot.gif`}
               alt="Discord bot demo showing the /verify command flow"
               fill
               unoptimized
-              style={{ objectFit: "contain" }}
-              onError={(e) => {
-                // Hide the image if it doesn't exist yet
-                (e.target as HTMLImageElement).style.display = "none";
-              }}
+              style={{ objectFit: "cover" }}
             />
-            {/* Placeholder overlay */}
-            <div
-              style={{
-                position: "absolute",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 12,
-                pointerEvents: "none",
-              }}
-            >
-              <PlayIcon />
-              <span style={{ fontSize: 14, color: "var(--text-muted)", fontWeight: 500 }}>
-                Demo GIF will be added here
-              </span>
-              <span style={{ fontSize: 12, color: "var(--grey-400)" }}>
-                Place your recording at <code style={{ background: "var(--grey-200)", padding: "1px 5px", borderRadius: 4 }}>public/discord-bot-demo.gif</code>
-              </span>
-            </div>
           </div>
         </section>
 
