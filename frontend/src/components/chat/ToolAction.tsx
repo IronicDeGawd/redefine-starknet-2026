@@ -566,13 +566,13 @@ function StartOAuthAction({
     if (platform === "github") {
       const clientId = process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID;
       if (!clientId) { onAction("error", { message: "GitHub OAuth not configured" }); return; }
-      document.cookie = `gh_oauth_state=${chatState};path=/;max-age=300;samesite=strict`;
+      document.cookie = `gh_oauth_state=${chatState};path=/;max-age=300;samesite=lax`;
       const redirectUri = `${origin}${BASE_PATH}/api/auth/github/callback`;
       window.location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user&state=${encodeURIComponent(chatState)}`;
     } else if (platform === "codeforces") {
       const clientId = process.env.NEXT_PUBLIC_CODEFORCES_CLIENT_ID;
       if (!clientId) { onAction("error", { message: "Codeforces OIDC not configured" }); return; }
-      document.cookie = `cf_oauth_state=${chatState};path=/;max-age=300;samesite=strict`;
+      document.cookie = `cf_oauth_state=${chatState};path=/;max-age=300;samesite=lax`;
       const redirectUri = `${origin}${BASE_PATH}/api/auth/codeforces/callback`;
       window.location.href = `https://codeforces.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=openid&state=${encodeURIComponent(chatState)}`;
     } else if (platform === "steam") {
@@ -582,7 +582,7 @@ function StartOAuthAction({
     } else if (platform === "strava") {
       const clientId = process.env.NEXT_PUBLIC_STRAVA_CLIENT_ID;
       if (!clientId) { onAction("error", { message: "Strava OAuth not configured" }); return; }
-      document.cookie = `strava_oauth_state=${chatState};path=/;max-age=300;samesite=strict`;
+      document.cookie = `strava_oauth_state=${chatState};path=/;max-age=300;samesite=lax`;
       const redirectUri = `${origin}${BASE_PATH}/api/auth/strava/callback`;
       window.location.href = `https://www.strava.com/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=activity:read_all&state=${encodeURIComponent(chatState)}`;
     } else {
