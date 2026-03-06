@@ -228,7 +228,7 @@ export default function PassportPage() {
                   </div>
 
                   <a
-                    href={`${explorerUrl}/tx/${credential.id}`}
+                    href={`${explorerUrl}/contract/0x30dffe5b1a71bab0da2cc639d117f54b9c90cfdc0b12e9ecce4b4b12893bc93`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium py-2 transition-colors"

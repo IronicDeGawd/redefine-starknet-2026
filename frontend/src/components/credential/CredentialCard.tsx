@@ -233,7 +233,7 @@ export function CredentialCard({ credential, variant = "compact", onRevoke, onMi
             variant="outline"
             onClick={() =>
               window.open(
-                `https://sepolia.voyager.online/search/${credential.id}`,
+                `https://sepolia.voyager.online/contract/0x30dffe5b1a71bab0da2cc639d117f54b9c90cfdc0b12e9ecce4b4b12893bc93`,
                 "_blank"
               )
             }

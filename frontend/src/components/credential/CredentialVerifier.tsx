@@ -215,12 +215,12 @@ function ValidCredentialResult({
         <Button
           variant="secondary"
           onClick={() =>
-            window.open(`https://sepolia.voyager.online/search/${credential.id}`, "_blank")
+            window.open(`https://sepolia.voyager.online/contract/0x30dffe5b1a71bab0da2cc639d117f54b9c90cfdc0b12e9ecce4b4b12893bc93`, "_blank")
           }
           className="w-full"
         >
           <ExternalLink className="w-4 h-4" />
-          View on Starkscan
+          View on Voyager
         </Button>
       </div>
     </Card>
