@@ -7,11 +7,10 @@ ZKCred solves a fundamental Web3 problem: **you shouldn't have to reveal your wa
 **One sentence:** ZKCred is a privacy-first, AI-powered credential passport that lets you prove who you are without revealing what you own.
 
 **Deployed on Starknet Sepolia:**
-- CredentialRegistry: `0x7612f6d36c9b17a58ceb4fba29ffa75b39145efdfd3fcf112edd133299099d6`
-- CredentialVerifier: `0x7cb3fcee7a4ed14724e50590d322b29bb8cf4b2eaf007fb3e91979ae590f94d`
-- CredentialMerkle: `0x24dc9dc8344c65f9ca9e357ca0ec36c2eccfc432d3697989a68ae7d0f065efb`
-- RangeProofVerifier: `0x44a44a4bc9b9ec03f79ce0c03aa6360a163cab4588cac9f65d526900b6d9b5a`
-- BadgeNFT (Soulbound): `0x4abf82ef753033b9959077ab8275b008651c38cbe52f9a07d282a0ba74df282`
+- CredentialRegistry: `0x2937785461e5981ec305596f56422afd0de742fbeb170a18beceab5acece4d5`
+- CredentialVerifier: `0x5eb9f08ea87de7da8f89396223ba5959b5e919e79afb65f60a87a3063a941ae`
+- CredentialMerkle: `0x1cadfc442dc5d0a6163544a0086bf8df3b7b07e832bac1d721242623b3fea81`
+- RangeProofVerifier: `0x29d39cafcf70d6753f5867a3e986d59165a268c2baa24f80f6e6e157927ac6d`
 
 ---
 
@@ -248,11 +247,10 @@ redefine-hackathon-2026/
 
 | Contract | Sepolia Address |
 |---|---|
-| CredentialRegistry | [`0x7612f6...99d6`](https://sepolia.voyager.online/contract/0x7612f6d36c9b17a58ceb4fba29ffa75b39145efdfd3fcf112edd133299099d6) |
-| CredentialVerifier | [`0x7cb3fc...f94d`](https://sepolia.voyager.online/contract/0x7cb3fcee7a4ed14724e50590d322b29bb8cf4b2eaf007fb3e91979ae590f94d) |
-| CredentialMerkle | [`0x24dc9d...efb`](https://sepolia.voyager.online/contract/0x24dc9dc8344c65f9ca9e357ca0ec36c2eccfc432d3697989a68ae7d0f065efb) |
-| RangeProofVerifier | [`0x44a44a...9b5a`](https://sepolia.voyager.online/contract/0x44a44a4bc9b9ec03f79ce0c03aa6360a163cab4588cac9f65d526900b6d9b5a) |
-| BadgeNFT (Soulbound) | [`0x4abf82...f282`](https://sepolia.voyager.online/contract/0x4abf82ef753033b9959077ab8275b008651c38cbe52f9a07d282a0ba74df282) |
+| CredentialRegistry | [`0x29377...e4d5`](https://sepolia.voyager.online/contract/0x2937785461e5981ec305596f56422afd0de742fbeb170a18beceab5acece4d5) |
+| CredentialVerifier | [`0x5eb9f...41ae`](https://sepolia.voyager.online/contract/0x5eb9f08ea87de7da8f89396223ba5959b5e919e79afb65f60a87a3063a941ae) |
+| CredentialMerkle | [`0x1cadf...ea81`](https://sepolia.voyager.online/contract/0x1cadfc442dc5d0a6163544a0086bf8df3b7b07e832bac1d721242623b3fea81) |
+| RangeProofVerifier | [`0x29d39...ac6d`](https://sepolia.voyager.online/contract/0x29d39cafcf70d6753f5867a3e986d59165a268c2baa24f80f6e6e157927ac6d) |
 
 ---
 
