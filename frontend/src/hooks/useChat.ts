@@ -58,6 +58,9 @@ export function useChat() {
         const currentMessages = messagesRef.current;
         const apiMessages: ChatMessage[] = [];
 
+        // Collect IDs being submitted this turn to avoid duplicates
+        const pendingToolIds = new Set(toolResults?.map((tr) => tr.toolUseId) ?? []);
+
         for (const m of currentMessages) {
           if (m.toolUse) {
             // Assistant message that contains a tool call
@@ -67,14 +70,17 @@ export function useChat() {
               toolUse: m.toolUse,
             });
             // Every tool_use MUST have a corresponding tool_result for Bedrock
-            apiMessages.push({
-              role: "user",
-              content: "",
-              toolResult: {
-                toolUseId: m.toolUse.id,
-                result: m.toolResult?.data ?? { error: "Tool action was not completed" },
-              },
-            });
+            // Skip if this turn's toolResults will provide it (avoid duplicates)
+            if (!pendingToolIds.has(m.toolUse.id)) {
+              apiMessages.push({
+                role: "user",
+                content: "",
+                toolResult: {
+                  toolUseId: m.toolUse.id,
+                  result: m.toolResult?.data ?? { error: "Tool action was not completed" },
+                },
+              });
+            }
           } else {
             apiMessages.push({
               role: m.role,
@@ -154,13 +160,9 @@ export function useChat() {
         });
       }
 
-      // Send tool result to continue conversation
-      await sendMessage("", [
-        {
-          toolUseId,
-          result,
-        },
-      ]);
+      // Continue conversation — pass toolResults for the current turn since
+      // messagesRef won't reflect the updateMessage until next render
+      await sendMessage("", [{ toolUseId, result }]);
     },
     [updateMessage, sendMessage]
   );
