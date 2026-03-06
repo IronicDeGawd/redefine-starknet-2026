@@ -60,13 +60,22 @@ export function CredentialVerifier({ initialId }: CredentialVerifierProps) {
   const [inputId, setInputId] = useState(initialId || "");
   const [result, setResult] = useState<VerifyCredentialResponse | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
-  const { verifyCredential, isVerifying } = useCredential();
+  const { verifyCredential, isVerifying, credentials } = useCredential();
 
   const handleVerify = async () => {
     if (!inputId.trim()) return;
 
     setHasSearched(true);
     const response = await verifyCredential(inputId.trim());
+
+    // Merge transactionHash from local store when API doesn't have it (pre-caching credentials)
+    if (response.valid && response.credential && !response.credential.transactionHash) {
+      const local = credentials.find((c) => c.id === inputId.trim());
+      if (local?.transactionHash) {
+        response.credential.transactionHash = local.transactionHash;
+      }
+    }
+
     setResult(response);
   };
 
