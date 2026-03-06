@@ -4,10 +4,11 @@
   "description": "Discord bot that assigns roles based on ZKCred credential tiers",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
+    "start": "node -r dotenv/config index.js",
     "register": "node register-commands.js"
   },
   "dependencies": {
-    "discord.js": "^14.14.1"
+    "discord.js": "^14.14.1",
+    "dotenv": "^16.4.7"
   }
 }

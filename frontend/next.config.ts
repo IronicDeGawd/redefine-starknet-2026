@@ -3,7 +3,6 @@ import createMDX from "@next/mdx";
 
 const nextConfig: NextConfig = {
   pageExtensions: ["ts", "tsx", "md", "mdx"],
-  serverExternalPackages: ["discord.js"],
 };
 
 const withMDX = createMDX({
