@@ -21,7 +21,7 @@ import {
   verifyBitcoinSignature,
   hashToFelt,
 } from "@/lib/utils";
-import { cacheCredential } from "@/lib/redis";
+import { cacheCredential, cacheTxByCredentialId } from "@/lib/redis";
 import { verifyBalance, verifyWalletAge } from "@/lib/oracle";
 import { createCommitment } from "@/lib/crypto/commitment";
 import type { ApiError } from "@/types/api";
@@ -238,6 +238,7 @@ export async function POST(
     cacheCredential(pubkeyHash, request.credentialType, {
       credentialId, tier, tierName, transactionHash: tx.transaction_hash,
     });
+    cacheTxByCredentialId(credentialId, tx.transaction_hash);
 
     // 13. Return success with verification proof
     return NextResponse.json({

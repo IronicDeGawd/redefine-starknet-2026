@@ -30,6 +30,7 @@ interface LookedUpCredential {
   issuedAt: string;
   revoked: boolean;
   status: "active" | "revoked";
+  transactionHash?: string;
 }
 
 const TIER_EMOJIS: Record<number, string> = { 0: "\u{1F331}", 1: "\u2B50", 2: "\u{1F48E}", 3: "\u{1F451}" };
@@ -228,7 +229,11 @@ export default function PassportPage() {
                   </div>
 
                   <a
-                    href={`${explorerUrl}/contract/${process.env.NEXT_PUBLIC_CREDENTIAL_REGISTRY_ADDRESS}`}
+                    href={
+                      credential.transactionHash
+                        ? `${explorerUrl}/tx/${credential.transactionHash}`
+                        : `${explorerUrl}/contract/${process.env.NEXT_PUBLIC_CREDENTIAL_REGISTRY_ADDRESS}`
+                    }
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 text-sm text-[var(--primary)] hover:text-[var(--primary-dark)] font-medium py-2 transition-colors"

@@ -23,7 +23,7 @@ import {
   isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
-import { cacheCredential } from "@/lib/redis";
+import { cacheCredential, cacheTxByCredentialId } from "@/lib/redis";
 import { verifyEthBalance } from "@/lib/connectors/ethereum";
 import { createCommitment } from "@/lib/crypto/commitment";
 import { verifyEthSignature, isTimestampValid } from "@/lib/utils/ethereum-sig";
@@ -188,6 +188,7 @@ export async function POST(
       credentialId, tier: verification.tier, tierName: verification.tierName,
       transactionHash: tx.transaction_hash,
     });
+    cacheTxByCredentialId(credentialId, tx.transaction_hash);
 
     // 11. Return success
     return NextResponse.json({

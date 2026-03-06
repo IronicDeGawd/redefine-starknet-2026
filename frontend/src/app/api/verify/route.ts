@@ -14,6 +14,7 @@ import {
   getErrorMessage,
 } from "@/lib/utils";
 import { getTierName } from "@/lib/badges/config";
+import { getTxByCredentialId } from "@/lib/redis";
 import type { Tier } from "@/types/credential";
 import type { VerifyCredentialResponse, ApiError } from "@/types/api";
 
@@ -71,7 +72,10 @@ export async function GET(
     const revoked = Boolean(result.revoked);
     const credentialType = feltToString(result.credential_type);
 
-    // 8. Format and return
+    // 8. Fetch tx hash from Redis (best-effort)
+    const transactionHash = await getTxByCredentialId(credentialId) ?? undefined;
+
+    // 9. Format and return
     return NextResponse.json({
       valid: true,
       credential: {
@@ -81,6 +85,7 @@ export async function GET(
         tierName: getTierName(credentialType, tier as Tier),
         issuedAt: new Date(issuedAt * 1000).toISOString(),
         status: revoked ? "revoked" : "active",
+        transactionHash,
       },
     });
   } catch (error) {

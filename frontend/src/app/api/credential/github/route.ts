@@ -20,7 +20,7 @@ import {
   isDuplicateError,
   hashToFelt,
 } from "@/lib/utils";
-import { cacheCredential } from "@/lib/redis";
+import { cacheCredential, cacheTxByCredentialId } from "@/lib/redis";
 import { verifyGitHub } from "@/lib/connectors/github";
 import { createCommitment } from "@/lib/crypto/commitment";
 import type { ApiError } from "@/types/api";
@@ -95,6 +95,7 @@ export async function POST(
       credentialId, tier: verification.tier, tierName: verification.tierName,
       transactionHash: tx.transaction_hash,
     });
+    cacheTxByCredentialId(credentialId, tx.transaction_hash);
 
     // Clear the OAuth cookie after successful issuance
     const response = NextResponse.json({

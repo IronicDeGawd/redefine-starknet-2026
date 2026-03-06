@@ -65,6 +65,7 @@ export interface VerifyCredentialResponse {
     tierName: string;
     issuedAt: string;
     status: CredentialStatus;
+    transactionHash?: string;
   };
   error?: string;
 }

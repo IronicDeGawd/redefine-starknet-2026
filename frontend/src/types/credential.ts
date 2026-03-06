@@ -55,6 +55,7 @@ export interface Credential {
   issuedAt: string;
   revoked: boolean;
   nftTokenId?: string;
+  transactionHash?: string;
 }
 
 export interface CredentialOnChain {

@@ -214,9 +214,13 @@ function ValidCredentialResult({
         {/* Actions */}
         <Button
           variant="secondary"
-          onClick={() =>
-            window.open(`${process.env.NEXT_PUBLIC_EXPLORER_URL || "https://sepolia.voyager.online"}/contract/${process.env.NEXT_PUBLIC_CREDENTIAL_REGISTRY_ADDRESS}`, "_blank")
-          }
+          onClick={() => {
+            const base = process.env.NEXT_PUBLIC_EXPLORER_URL || "https://sepolia.voyager.online";
+            const url = credential.transactionHash
+              ? `${base}/tx/${credential.transactionHash}`
+              : `${base}/contract/${process.env.NEXT_PUBLIC_CREDENTIAL_REGISTRY_ADDRESS}`;
+            window.open(url, "_blank");
+          }}
           className="w-full"
         >
           <ExternalLink className="w-4 h-4" />

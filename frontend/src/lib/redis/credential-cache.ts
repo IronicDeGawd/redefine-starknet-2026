@@ -15,9 +15,14 @@ export interface CachedCredential {
 }
 
 const KEY_PREFIX = "zkcred:credential";
+const TX_PREFIX = "zkcred:tx";
 
 function credentialKey(pubkeyHash: string, credentialType: string): string {
   return `${KEY_PREFIX}:${pubkeyHash}:${credentialType}`;
+}
+
+function txKey(credentialId: string): string {
+  return `${TX_PREFIX}:${credentialId}`;
 }
 
 /**
@@ -53,6 +58,38 @@ export async function getCachedCredential(
     return JSON.parse(raw) as CachedCredential;
   } catch (err) {
     console.error("[credential-cache] Failed to read:", err);
+    return null;
+  }
+}
+
+/**
+ * Cache transaction hash by credential ID for explorer links.
+ * Fire-and-forget — errors are logged but never thrown.
+ */
+export async function cacheTxByCredentialId(
+  credentialId: string,
+  transactionHash: string
+): Promise<void> {
+  try {
+    const client = getRedisClient();
+    await client.set(txKey(credentialId), transactionHash);
+  } catch (err) {
+    console.error("[credential-cache] Failed to cache tx:", err);
+  }
+}
+
+/**
+ * Get transaction hash for a credential ID.
+ * Returns null if not found or Redis unavailable.
+ */
+export async function getTxByCredentialId(
+  credentialId: string
+): Promise<string | null> {
+  try {
+    const client = getRedisClient();
+    return await client.get(txKey(credentialId));
+  } catch (err) {
+    console.error("[credential-cache] Failed to read tx:", err);
     return null;
   }
 }

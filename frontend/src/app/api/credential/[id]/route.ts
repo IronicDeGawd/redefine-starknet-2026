@@ -17,6 +17,7 @@ import {
   parseStarknetError,
 } from "@/lib/utils";
 import { getTierName } from "@/lib/badges/config";
+import { getTxByCredentialId } from "@/lib/redis";
 import type { Tier } from "@/types/credential";
 import type { ApiError } from "@/types/api";
 
@@ -30,6 +31,7 @@ interface CredentialResponse {
     tierName: string;
     issuedAt: string;
     status: "active" | "revoked";
+    transactionHash?: string;
   };
 }
 
@@ -71,7 +73,10 @@ export async function GET(
       return NextResponse.json({ error: "Credential not found" }, { status: 404 });
     }
 
-    // 6. Format and return
+    // 6. Fetch tx hash from Redis (best-effort)
+    const transactionHash = await getTxByCredentialId(id) ?? undefined;
+
+    // 7. Format and return
     const tier = Number(result.tier);
     return NextResponse.json({
       credential: {
@@ -81,6 +86,7 @@ export async function GET(
         tierName: getTierName(feltToString(result.credential_type), tier as Tier),
         issuedAt: new Date(Number(result.issued_at) * 1000).toISOString(),
         status: result.revoked ? "revoked" : "active",
+        transactionHash,
       },
     });
   } catch (error) {

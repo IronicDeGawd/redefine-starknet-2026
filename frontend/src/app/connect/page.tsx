@@ -276,7 +276,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    const saveCredential = (data: { credentialId?: string; tier: number; tierName: string }) => {
+    const saveCredential = (data: { credentialId?: string; tier: number; tierName: string; transactionHash?: string }) => {
         if (!data.credentialId) return;
         const credType = connector.credentialType as CredentialType;
         const alreadyExists = existingCredentials.some((c) => c.credentialType === credType);
@@ -288,6 +288,7 @@ function ConnectorCard({ connector }: { connector: ConnectorConfig }) {
             tier: data.tier as Tier,
             issuedAt: new Date().toISOString(),
             revoked: false,
+            transactionHash: data.transactionHash as string | undefined,
         });
     };
 

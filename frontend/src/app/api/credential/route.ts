@@ -21,7 +21,7 @@ import {
   parseStarknetError,
   verifyBitcoinSignature,
 } from "@/lib/utils";
-import { cacheCredential } from "@/lib/redis";
+import { cacheCredential, cacheTxByCredentialId } from "@/lib/redis";
 import type {
   IssueCredentialRequest,
   IssueCredentialResponse,
@@ -125,6 +125,7 @@ export async function POST(
     cacheCredential(pubkeyHash, request.credentialType, {
       credentialId, tier: request.tier, transactionHash: tx.transaction_hash,
     });
+    cacheTxByCredentialId(credentialId, tx.transaction_hash);
 
     // 12. Return success
     return NextResponse.json({
