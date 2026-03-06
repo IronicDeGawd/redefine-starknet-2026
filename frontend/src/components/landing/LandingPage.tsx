@@ -2,8 +2,6 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { TierIcon } from "@/components/credential/TierBadge";
-import { TIER_NAMES, TIER_RANGES, type Tier } from "@/types/credential";
 import { useBtcWallet } from "@/hooks/useBtcWallet";
 import {
   Shield,
@@ -16,6 +14,9 @@ import {
   Github,
   ExternalLink,
   Bitcoin,
+  Gamepad2,
+  Activity,
+  Code,
 } from "lucide-react";
 
 const features = [
@@ -23,7 +24,7 @@ const features = [
     icon: Shield,
     title: "Privacy First",
     description:
-      "Your wallet address is never revealed. Only prove what you need to prove.",
+      "Your wallet address and account details are never revealed. Only prove what you need to prove.",
     color: "text-[var(--primary)]",
     bgColor: "bg-[var(--primary-light)]",
   },
@@ -39,7 +40,7 @@ const features = [
     icon: Eye,
     title: "Selective Disclosure",
     description:
-      "Prove your holdings tier without revealing exact amounts or addresses.",
+      "Prove your tier without revealing exact amounts, ratings, or identifiers.",
     color: "text-cyan-600",
     bgColor: "bg-cyan-50",
   },
@@ -47,32 +48,42 @@ const features = [
     icon: Lock,
     title: "Cryptographic Security",
     description:
-      "Secured by Bitcoin signatures and zero-knowledge proofs on Starknet.",
+      "Commitment-based proofs secured by Poseidon hashing on Starknet.",
     color: "text-emerald-600",
     bgColor: "bg-emerald-50",
   },
 ];
 
+const credentialTypes = [
+  { icon: Bitcoin, label: "BTC Holdings", description: "Shrimp → Whale", color: "text-orange-500", bg: "bg-orange-50" },
+  { icon: Wallet, label: "Wallet Age", description: "Newbie → OG", color: "text-amber-500", bg: "bg-amber-50" },
+  { icon: Wallet, label: "ETH Holdings", description: "Dust → Whale", color: "text-blue-500", bg: "bg-blue-50" },
+  { icon: Github, label: "GitHub Dev", description: "Seedling → Trophy", color: "text-purple-500", bg: "bg-purple-50" },
+  { icon: Code, label: "Codeforces", description: "Newbie → Master", color: "text-amber-600", bg: "bg-amber-50" },
+  { icon: Gamepad2, label: "Steam Gamer", description: "Casual → Legend", color: "text-sky-500", bg: "bg-sky-50" },
+  { icon: Activity, label: "Strava Athlete", description: "Sneaker → Peak", color: "text-rose-500", bg: "bg-rose-50" },
+];
+
 const steps = [
   {
     number: "01",
-    title: "Connect Wallet",
-    description: "Connect your Bitcoin wallet via Xverse to prove ownership.",
+    title: "Connect an Account",
+    description: "Link a Bitcoin wallet, Ethereum wallet, GitHub, Steam, Strava, or Codeforces account.",
   },
   {
     number: "02",
-    title: "Sign Message",
-    description: "Sign a message to verify you control the wallet. No BTC spent.",
+    title: "Verify Ownership",
+    description: "Authenticate via OAuth, OpenID, or wallet signature. No sensitive data leaves your device.",
   },
   {
     number: "03",
     title: "Get Credential",
-    description: "Receive a privacy-preserving credential on Starknet.",
+    description: "Receive a privacy-preserving, tiered credential issued on Starknet.",
   },
   {
     number: "04",
     title: "Share & Verify",
-    description: "Share your credential ID for others to verify your tier.",
+    description: "Share your credential ID. Anyone can verify your tier on-chain without learning your identity.",
   },
 ];
 
@@ -108,13 +119,12 @@ export function LandingPage() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold text-[var(--text-primary)] mb-6 leading-tight">
-            Prove Your Bitcoin Holdings{" "}
-            <span className="text-gradient">Without Revealing Your Wallet</span>
+            Prove Who You Are{" "}
+            <span className="text-gradient">Without Revealing Anything</span>
           </h1>
 
           <p className="text-xl text-[var(--text-secondary)] mb-10 max-w-2xl mx-auto">
-            ZKCred creates privacy-preserving credentials that prove your BTC tier
-            (Shrimp, Crab, Fish, or Whale) without exposing your address or exact balance.
+            ZKCred issues privacy-preserving, tiered credentials from Bitcoin, Ethereum, GitHub, Steam, Strava, and Codeforces — stored on Starknet, verifiable by anyone.
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -127,7 +137,7 @@ export function LandingPage() {
               variant="outline"
               size="lg"
               onClick={() =>
-                window.open("https://github.com/your-repo/zkcred", "_blank")
+                window.open("https://github.com/IronicDeGawd/redefine-starknet-2026", "_blank")
               }
             >
               <Github className="w-5 h-5" />
@@ -145,7 +155,7 @@ export function LandingPage() {
               Why ZKCred?
             </h2>
             <p className="text-[var(--text-secondary)] max-w-2xl mx-auto">
-              Traditional verification requires exposing your wallet. ZKCred lets you
+              Traditional verification exposes your wallet or identity. ZKCred lets you
               prove your tier while keeping everything else private.
             </p>
           </div>
@@ -170,42 +180,31 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Tier System Section */}
+      {/* Credential Types Section */}
       <section className="py-20 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-[var(--text-primary)] mb-4">
-              BTC Tier System
+              7 Credential Types
             </h2>
             <p className="text-[var(--text-secondary)] max-w-2xl mx-auto">
-              Your credential proves which tier you belong to, without revealing
-              your exact holdings or wallet address.
+              Each credential proves a tier about you — without revealing your exact balance, rating, or identity.
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {([0, 1, 2, 3] as Tier[]).map((tier) => (
-              <Card
-                key={tier}
-                className="p-6 text-center hover:shadow-lg transition-shadow"
-              >
-                <div className="flex justify-center mb-4">
-                  <TierIcon tier={tier} size="lg" />
-                </div>
-                <h3 className="text-xl font-bold text-[var(--text-primary)] mb-1">
-                  {TIER_NAMES[tier]}
-                </h3>
-                <p className="text-sm text-[var(--text-muted)] mb-4">
-                  {TIER_RANGES[tier]}
-                </p>
-                <div className="text-xs text-[var(--text-secondary)]">
-                  {tier === 0 && "Getting started with Bitcoin"}
-                  {tier === 1 && "Building your stack"}
-                  {tier === 2 && "Serious holder"}
-                  {tier === 3 && "You've made it"}
-                </div>
-              </Card>
-            ))}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {credentialTypes.map((ct) => {
+              const Icon = ct.icon;
+              return (
+                <Card key={ct.label} className="p-5 hover:shadow-md transition-shadow">
+                  <div className={`w-10 h-10 rounded-lg ${ct.bg} flex items-center justify-center mb-3`}>
+                    <Icon className={`w-5 h-5 ${ct.color}`} />
+                  </div>
+                  <h3 className="font-semibold text-[var(--text-primary)] mb-1">{ct.label}</h3>
+                  <p className="text-sm text-[var(--text-muted)]">{ct.description}</p>
+                </Card>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -304,8 +303,8 @@ export function LandingPage() {
             Ready to Get Your Credential?
           </h2>
           <p className="text-white/80 mb-8 max-w-xl mx-auto">
-            Connect your Bitcoin wallet and create your privacy-preserving
-            credential in minutes.
+            Connect any supported account and get your privacy-preserving
+            credential issued on Starknet in minutes.
           </p>
           <Button
             onClick={connect}
@@ -315,7 +314,7 @@ export function LandingPage() {
             className="bg-white text-[var(--primary)] hover:bg-white/90"
           >
             <Wallet className="w-5 h-5" />
-            Connect Wallet to Start
+            Get Started
           </Button>
         </div>
       </section>
@@ -335,7 +334,7 @@ export function LandingPage() {
 
             <div className="flex items-center gap-6 text-sm text-[var(--text-secondary)]">
               <a
-                href="https://github.com/your-repo/zkcred"
+                href="https://github.com/IronicDeGawd/redefine-starknet-2026"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-1 hover:text-[var(--text-primary)]"
