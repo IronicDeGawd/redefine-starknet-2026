@@ -8,6 +8,8 @@
  *   STARKNET_ACCOUNT_ADDRESS - Account address (must be deployed and funded)
  */
 
+require("dotenv").config({ path: require("path").join(__dirname, "..", ".env") });
+
 const {
   Account,
   RpcProvider,
