@@ -281,6 +281,7 @@ interface IssueCredentialInput {
   address: string;
   message: string;
   credential_type: CredentialType;
+  credentialType?: CredentialType;
   tier: Tier;
 }
 
@@ -289,36 +290,79 @@ interface IssueCredentialActionProps {
   onAction: (action: string, data?: unknown) => void;
 }
 
+const OAUTH_CREDENTIAL_ENDPOINTS: Record<string, string> = {
+  github_dev: "/api/credential/github",
+  codeforces_coder: "/api/credential/codeforces",
+  steam_gamer: "/api/credential/steam",
+  strava_athlete: "/api/credential/strava",
+};
+
 function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) {
   const { issueCredential, isIssuing } = useCredential();
+  const addCredential = useAppStore((s) => s.addCredential);
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "issuing" | "success">("idle");
+
+  const credType = input.credential_type || input.credentialType;
+  const isOAuth = credType ? credType in OAUTH_CREDENTIAL_ENDPOINTS : false;
 
   const handleIssue = async () => {
     setError(null);
     setStatus("issuing");
 
     try {
-      const result = await issueCredential({
-        btcPubkey: input.pubkey,
-        btcAddress: input.address,
-        signature: input.signature,
-        message: input.message,
-        credentialType: input.credential_type,
-        tier: input.tier,
-      });
-
-      if (result.success) {
-        setStatus("success");
-        onAction("issued", {
-          credentialId: result.credentialId,
-          transactionHash: result.transactionHash,
-          tier: input.tier,
-          type: input.credential_type,
+      if (isOAuth && credType) {
+        const endpoint = OAUTH_CREDENTIAL_ENDPOINTS[credType];
+        const res = await fetch(`${BASE_PATH}${endpoint}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({}),
         });
+        const data = await res.json();
+
+        if (data.success) {
+          addCredential({
+            id: data.credentialId,
+            pubkeyHash: "",
+            credentialType: credType,
+            tier: data.tier as Tier,
+            issuedAt: new Date().toISOString(),
+            revoked: false,
+            transactionHash: data.transactionHash,
+          });
+          setStatus("success");
+          onAction("issued", {
+            credentialId: data.credentialId,
+            transactionHash: data.transactionHash,
+            tier: data.tier,
+            type: credType,
+          });
+        } else {
+          setError(data.error || "Failed to issue credential");
+          setStatus("idle");
+        }
       } else {
-        setError(result.error || "Failed to issue credential");
-        setStatus("idle");
+        const result = await issueCredential({
+          btcPubkey: input.pubkey,
+          btcAddress: input.address,
+          signature: input.signature,
+          message: input.message,
+          credentialType: credType!,
+          tier: input.tier,
+        });
+
+        if (result.success) {
+          setStatus("success");
+          onAction("issued", {
+            credentialId: result.credentialId,
+            transactionHash: result.transactionHash,
+            tier: input.tier,
+            type: credType,
+          });
+        } else {
+          setError(result.error || "Failed to issue credential");
+          setStatus("idle");
+        }
       }
     } catch {
       setError("Something went wrong. Please try again.");
