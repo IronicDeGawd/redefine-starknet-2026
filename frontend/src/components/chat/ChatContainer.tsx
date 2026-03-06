@@ -66,8 +66,8 @@ export function ChatContainer() {
     lastMessageCountRef.current = messages.length;
   }, [messages.length]);
 
-  const handleToolAction = async (toolId: string, _action: string, data?: unknown) => {
-    await submitToolResult(toolId, data, true);
+  const handleToolAction = async (toolId: string, action: string, data?: unknown) => {
+    await submitToolResult(toolId, data, action !== "error");
   };
 
   return (

@@ -338,8 +338,10 @@ function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) 
             type: credType,
           });
         } else {
-          setError(data.error || "Failed to issue credential");
+          const errMsg = data.error || "Failed to issue credential";
+          setError(errMsg);
           setStatus("idle");
+          onAction("error", { error: errMsg, credentialType: credType });
         }
       } else {
         const result = await issueCredential({
@@ -360,13 +362,17 @@ function IssueCredentialAction({ input, onAction }: IssueCredentialActionProps) 
             type: credType,
           });
         } else {
-          setError(result.error || "Failed to issue credential");
+          const errMsg = result.error || "Failed to issue credential";
+          setError(errMsg);
           setStatus("idle");
+          onAction("error", { error: errMsg, credentialType: credType });
         }
       }
     } catch {
-      setError("Something went wrong. Please try again.");
+      const errMsg = "Something went wrong. Please try again.";
+      setError(errMsg);
       setStatus("idle");
+      onAction("error", { error: errMsg, credentialType: credType });
     }
   };
 

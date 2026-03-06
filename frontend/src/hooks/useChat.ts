@@ -66,17 +66,15 @@ export function useChat() {
               content: m.content,
               toolUse: m.toolUse,
             });
-            // If this tool has a result, add the tool result as a user message
-            if (m.toolResult) {
-              apiMessages.push({
-                role: "user",
-                content: "",
-                toolResult: {
-                  toolUseId: m.toolUse.id,
-                  result: m.toolResult.data,
-                },
-              });
-            }
+            // Every tool_use MUST have a corresponding tool_result for Bedrock
+            apiMessages.push({
+              role: "user",
+              content: "",
+              toolResult: {
+                toolUseId: m.toolUse.id,
+                result: m.toolResult?.data ?? { error: "Tool action was not completed" },
+              },
+            });
           } else {
             apiMessages.push({
               role: m.role,
