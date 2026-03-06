@@ -6,7 +6,7 @@
 
 | Technology | Purpose |
 |------------|---------|
-| Next.js 14 | App Router, API routes, SSR |
+| Next.js 15 | App Router, API routes, SSR |
 | React 19 | UI components |
 | Tailwind CSS v4 | Styling |
 | Zustand | State management with persistence |
@@ -114,8 +114,8 @@ AWS_REGION=us-east-1
 # Starknet
 NEXT_PUBLIC_STARKNET_NETWORK=sepolia
 STARKNET_PRIVATE_KEY=your_deployer_private_key
-CREDENTIAL_REGISTRY_ADDRESS=0x073566a1fcb9f4f7ca7a0f8d0e056929c59ccf435b8ae88ca1a39251bfeed216
-CREDENTIAL_VERIFIER_ADDRESS=0x07d69c729df6c1ac6d2c011a6e740fb23ea924928dcacb8f2f1a6c6c5b4f34e2
+CREDENTIAL_REGISTRY_ADDRESS=0x7612f6d36c9b17a58ceb4fba29ffa75b39145efdfd3fcf112edd133299099d6
+CREDENTIAL_VERIFIER_ADDRESS=0x7cb3fcee7a4ed14724e50590d322b29bb8cf4b2eaf007fb3e91979ae590f94d
 ```
 
 ### Development

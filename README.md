@@ -51,8 +51,8 @@ RangeProofVerifier   — on-chain range proof verification (stake in privacy sto
 ```
 
 **Deployed on Starknet Sepolia:**
-- CredentialRegistry: `0xab5fbdd27cc7e4d337742295d62c986489d6e36f1020009bffa7935f9e1038`
-- CredentialVerifier: `0x22a8cfb1aa5383fd39f6c3db717770905379a3531457b75bd1e56917392e3a4`
+- CredentialRegistry: `0x7612f6d36c9b17a58ceb4fba29ffa75b39145efdfd3fcf112edd133299099d6`
+- CredentialVerifier: `0x7cb3fcee7a4ed14724e50590d322b29bb8cf4b2eaf007fb3e91979ae590f94d`
 
 ### 🌐 Public REST API
 
@@ -245,10 +245,10 @@ redefine-hackathon-2026/
 
 | Contract | Sepolia Address |
 |---|---|
-| CredentialRegistry | [`0x30dffe...3bc93`](https://sepolia.voyager.online/contract/0x30dffe5b1a71bab0da2cc639d117f54b9c90cfdc0b12e9ecce4b4b12893bc93) |
-| CredentialVerifier | [`0x6b03b2...251d`](https://sepolia.voyager.online/contract/0x6b03b228cc65f4fc63c60dfc03b781085f85e3db5c2567c5f2bb56d8662251d) |
-| CredentialMerkle | [`0x7a03d3...3b57`](https://sepolia.voyager.online/contract/0x7a03d3644a5328025abcf3dc78b38664b7c8a62d01c86429d518db259c83b57) |
-| RangeProofVerifier | [`0x54886d...6bc9`](https://sepolia.voyager.online/contract/0x54886d18ffbaab3e026b39ff6b1f41e26caa0531e20eeb0cf181d0068ec6bc9) |
+| CredentialRegistry | [`0x7612f6...99d6`](https://sepolia.voyager.online/contract/0x7612f6d36c9b17a58ceb4fba29ffa75b39145efdfd3fcf112edd133299099d6) |
+| CredentialVerifier | [`0x7cb3fc...f94d`](https://sepolia.voyager.online/contract/0x7cb3fcee7a4ed14724e50590d322b29bb8cf4b2eaf007fb3e91979ae590f94d) |
+| CredentialMerkle | [`0x24dc9d...efb`](https://sepolia.voyager.online/contract/0x24dc9dc8344c65f9ca9e357ca0ec36c2eccfc432d3697989a68ae7d0f065efb) |
+| RangeProofVerifier | [`0x44a44a...9b5a`](https://sepolia.voyager.online/contract/0x44a44a4bc9b9ec03f79ce0c03aa6360a163cab4588cac9f65d526900b6d9b5a) |
 | BadgeNFT (Soulbound) | [`0x4abf82...f282`](https://sepolia.voyager.online/contract/0x4abf82ef753033b9959077ab8275b008651c38cbe52f9a07d282a0ba74df282) |
 
 ---
