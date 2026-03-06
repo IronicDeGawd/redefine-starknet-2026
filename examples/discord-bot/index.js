@@ -80,6 +80,22 @@ function getLoungeRoles(tier) {
 }
 
 // ---------------------------------------------------------------------------
+// In-memory credential store (resets on bot restart)
+// Map<discordUserId, Array<{ type, tier, tierName, credentialId, verifiedAt }>>
+// ---------------------------------------------------------------------------
+
+const userCredentials = new Map();
+
+function storeCredential(userId, credential) {
+  if (!userCredentials.has(userId)) userCredentials.set(userId, []);
+  const list = userCredentials.get(userId);
+  // Replace existing credential of the same type
+  const idx = list.findIndex((c) => c.type === credential.type);
+  if (idx >= 0) list[idx] = credential;
+  else list.push(credential);
+}
+
+// ---------------------------------------------------------------------------
 // Discord Client Setup
 // ---------------------------------------------------------------------------
 
@@ -104,6 +120,15 @@ client.once("ready", async () => {
           .setDescription("Your ZKCred credential ID (0x...)")
           .setRequired(true)
       ),
+    new SlashCommandBuilder()
+      .setName("help")
+      .setDescription("Learn how ZKCred works and how to use this bot"),
+    new SlashCommandBuilder()
+      .setName("credentials")
+      .setDescription("View all supported credential types and their tiers"),
+    new SlashCommandBuilder()
+      .setName("mycredentials")
+      .setDescription("View your verified credentials"),
   ].map((cmd) => cmd.toJSON());
 
   const rest = new REST({ version: "10" }).setToken(DISCORD_TOKEN);
@@ -126,6 +151,99 @@ client.once("ready", async () => {
 
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
+
+  // ----- /help -----
+  if (interaction.commandName === "help") {
+    const embed = new EmbedBuilder()
+      .setTitle("ZKCred Bot")
+      .setDescription(
+        "ZKCred issues **privacy-preserving credentials** on Starknet. " +
+        "Prove your on-chain holdings, developer activity, or gaming stats " +
+        "without revealing your exact data."
+      )
+      .addFields(
+        {
+          name: "How it works",
+          value:
+            "1. Visit the ZKCred app and connect your wallet\n" +
+            "2. Choose a credential type and complete verification\n" +
+            "3. Copy your **Credential ID** from the success screen\n" +
+            "4. Run `/verify <credential_id>` here to get your role",
+        },
+        {
+          name: "Commands",
+          value:
+            "`/verify <credential_id>` — Verify a credential and get your tier role\n" +
+            "`/mycredentials` — View your verified credentials\n" +
+            "`/credentials` — View all supported credential types and tiers\n" +
+            "`/help` — Show this message",
+        },
+        {
+          name: "Lounge Access",
+          value:
+            "All verified users get **ZKCred Verified**. " +
+            "Tier 2+ unlocks **Silver Lounge**, Tier 3 unlocks **Gold Lounge**.",
+        }
+      )
+      .setColor(0x5b7fff);
+
+    await interaction.reply({ embeds: [embed] });
+    return;
+  }
+
+  // ----- /credentials -----
+  if (interaction.commandName === "credentials") {
+    const lines = Object.entries(CREDENTIAL_TIERS).map(([type, config]) => {
+      const tiers = Object.entries(config.tiers)
+        .map(([t, name]) => `${TIER_EMOJIS[t] ?? ""} ${name}`)
+        .join(" > ");
+      return `**${config.label}** (\`${type}\`)\n${tiers}`;
+    });
+
+    const embed = new EmbedBuilder()
+      .setTitle("Supported Credential Types")
+      .setDescription(lines.join("\n\n"))
+      .addFields({
+        name: "Tier Legend",
+        value: `${TIER_EMOJIS[0]} Tier 0  >  ${TIER_EMOJIS[1]} Tier 1  >  ${TIER_EMOJIS[2]} Tier 2  >  ${TIER_EMOJIS[3]} Tier 3`,
+      })
+      .setColor(0x5b7fff);
+
+    await interaction.reply({ embeds: [embed] });
+    return;
+  }
+
+  // ----- /mycredentials -----
+  if (interaction.commandName === "mycredentials") {
+    const creds = userCredentials.get(interaction.user.id);
+    if (!creds || creds.length === 0) {
+      const embed = new EmbedBuilder()
+        .setTitle("No Credentials Found")
+        .setDescription(
+          "You haven't verified any credentials yet.\n" +
+          "Use `/verify <credential_id>` to verify one!"
+        )
+        .setColor(0x9ca3af);
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+      return;
+    }
+
+    const lines = creds.map((c) => {
+      const roleInfo = getRoleInfo(c.type, c.tier);
+      const time = `<t:${Math.floor(c.verifiedAt / 1000)}:R>`;
+      return `${roleInfo.emoji} **${roleInfo.name}** — verified ${time}\n\`${c.credentialId}\``;
+    });
+
+    const embed = new EmbedBuilder()
+      .setTitle(`Your Credentials (${creds.length})`)
+      .setDescription(lines.join("\n\n"))
+      .setColor(0x5b7fff);
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
+    return;
+  }
+
+  // ----- /verify -----
   if (interaction.commandName !== "verify") return;
 
   const credentialId = interaction.options.getString("credential_id", true);
@@ -245,6 +363,14 @@ client.on("interactionCreate", async (interaction) => {
       )
       .setFooter({ text: `Credential ID: ${credential.id}` })
       .setTimestamp();
+
+    storeCredential(interaction.user.id, {
+      type: credential.type,
+      tier: credential.tier,
+      tierName: credential.tierName ?? roleInfo.name,
+      credentialId: credentialId,
+      verifiedAt: Date.now(),
+    });
 
     console.log(`[Discord Bot] Roles assigned to ${interaction.user.tag}: ${assignedRoles.join(", ")}`);
     await interaction.editReply({ embeds: [embed] });
